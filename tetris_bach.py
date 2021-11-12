@@ -14,7 +14,7 @@ Adapted by Bach Nguyen
 import random
 import sys
 
-from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal, QObject, pyqtSlot
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox,
     QWidget, QMainWindow,  QApplication)
@@ -22,6 +22,10 @@ from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QMessageB
 
 class Tetris(QMainWindow):
 
+    main_score = 0
+    main_level = 0
+    main_lines = 0
+    
     def __init__(self):
         super().__init__()
 
@@ -30,41 +34,32 @@ class Tetris(QMainWindow):
 
     def initUI(self):
         """initiates application UI"""
-        
-        centralWidget = QWidget()
-        
+                
         hbox = QHBoxLayout()
         
         self.left = QVBoxLayout()
         
-#        piecesTitle = QLabel('Pieces')       
-#        self.piecesValue = QLabel('0')
-#        self.piecesValue.setStyleSheet("color: green;"
-#                                       "background-color: black;")        
-#        self.left.addWidget(piecesTitle)
-#        self.left.addWidget(self.piecesValue)
-
-#        self.score = 0
-        scoreTitle = QLabel('Score')       
+        scoreTitle = QLabel('SCORE')       
         self.scoreValue = QLabel('0')
-        self.scoreValue.setStyleSheet("color: green;"
-                                     "background-color: black;")        
+        self.scoreValue.setStyleSheet("color: cyan;"
+                                      "background-color: black;") 
+        self.scoreValue.setAlignment(Qt.AlignmentFlag.AlignRight)     
         self.left.addWidget(scoreTitle)
         self.left.addWidget(self.scoreValue)
  
-#        self.level = 0
-        levelTitle = QLabel('Level')       
-        self.levelValue = QLabel('0')
-        self.levelValue.setStyleSheet("color: green;"
-                                     "background-color: black;")        
+        levelTitle = QLabel('LEVEL')       
+        self.levelValue = QLabel('0') 
+        self.levelValue.setStyleSheet("color: white;"
+                                      "background-color: black;")         
+        self.levelValue.setAlignment(Qt.AlignmentFlag.AlignRight)                                    
         self.left.addWidget(levelTitle)
         self.left.addWidget(self.levelValue)
  
-        linesTitle = QLabel('Lines')       
+        linesTitle = QLabel('LINES')       
         self.linesValue = QLabel('0')
-        self.linesValue.setStyleSheet("color: green;"
-                                     "background-color: black;")        
- 
+        self.linesValue.setStyleSheet("color: yellow;"
+                                      "background-color: black;")         
+        self.linesValue.setAlignment(Qt.AlignmentFlag.AlignRight)  
         self.left.addWidget(linesTitle)
         self.left.addWidget(self.linesValue)
                       
@@ -79,26 +74,25 @@ class Tetris(QMainWindow):
         hbox.addWidget(self.tboard)
         hbox.addWidget(self.right)
         
-     
-#        self.tboard = Board(self)
-#        self.setCentralWidget(self.tboard)
-
+        centralWidget = QWidget()
+        
         centralWidget.setLayout(hbox)
         self.setCentralWidget(centralWidget)
         
         self.statusbar = self.statusBar()
         self.statusbar.setStyleSheet("color: black;"
                                      "background-color: green;")
-#        self.tboard.msg2Statusbar[str].connect(self.statusbar.showMessage)
-        self.tboard.msg2Statusbar[str].connect(self.linesValue.setText)
-#        self.tboard.msg2Pieces[str].connect(self.piecesValue.setText)
-        self.tboard.msg2Lines[str].connect(self.linesValue.setText)
-                
+                                     
+        # Connect the Board's signals to slots                                     
+        self.tboard.msg2Statusbar[str].connect(self.statusbar.showMessage)
+        self.tboard.lines_cleared.connect(self.on_lines_cleared)
+ 
+        # start game                
         self.tboard.start()
 
 #        self.resize(180, 380)
-#        self.resize(180*3, 380)
-        self.resize(180*3*2, 380*2)       
+        self.resize(180*3, 380) #
+#        self.resize(270*3, 570)    # x1.5   
         self.center()
         self.setWindowTitle('Tetris')
         self.show()
@@ -114,17 +108,49 @@ class Tetris(QMainWindow):
         self.move(qr.topLeft())
 
 
+    # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
+    @pyqtSlot(int)
+    def on_lines_cleared(self, n):
+        print('Number of lines cleared (%s) in this round.' % (n))
+
+        # Update and display SCORE
+        self.main_lines += n
+        self.linesValue.setNum(self.main_lines)
+        print('\tmain_lines: %s.' % (self.main_lines))
+
+        # Update and display LEVEL        
+        self.main_level = self.main_lines // 10
+        self.levelValue.setNum(self.main_level)        
+        print('\tmain_level: %s' % (self.main_level)) 
+
+        # n |		Points
+        #=================================
+        # 1                 40
+        # 2                100
+        # 3                300
+        # 4               1200        
+        point_table = [40, 100, 300, 1200]
+            
+        self.main_score += (self.main_level + 1)*point_table[n - 1] 
+        self.scoreValue.setNum(self.main_score)      
+        print('\tmain_score: %s' % (self.main_score)) 
+            
+            
+            
 class Board(QFrame):
 
     msg2Statusbar = pyqtSignal(str)
-    msg2Lines     = pyqtSignal(str)    
     
+    # Signal emitted when full lines are cleared, carrying the number of lines cleared
+    # in this round
+    lines_cleared = pyqtSignal(int) 
+     
     BoardWidth = 10
     BoardHeight = 20 #22
     Speed = 300 # Each 300 ms a new game cycle will start.
 
-    score = 0
-    level = 0
+#    score = 0
+#    level = 0
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -144,8 +170,9 @@ class Board(QFrame):
         self.board = [] # origin (0, 0) is the bottom left corner
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setStyleSheet('background-color: gray;')  
-        self.setFixedSize(180*2, 380*2) 
+        self.setStyleSheet('background-color: gray;') 
+        self.setFixedSize(180, 380)         
+#        self.setFixedSize(270, 570) # 1.5x
         
         self.isStarted = False
         self.isPaused = False
@@ -187,7 +214,7 @@ class Board(QFrame):
         self.numLinesRemoved = 0
         self.clearBoard()
 
-        self.msg2Statusbar.emit(str(self.numLinesRemoved))
+        self.msg2Statusbar.emit('GOOD LUCK!')
 
         self.newPiece()
         self.timer.start(Board.Speed, self)
@@ -203,12 +230,12 @@ class Board(QFrame):
 
         if self.isPaused:
             self.timer.stop()
-            self.msg2Statusbar.emit("paused")
+            self.msg2Statusbar.emit("PAUSED")
 
         else:
             self.timer.start(Board.Speed, self)
-            self.msg2Statusbar.emit(str(self.numLinesRemoved))
-
+            self.msg2Statusbar.emit('Playing...')
+ 
         self.update()
 
 
@@ -373,20 +400,22 @@ class Board(QFrame):
                                         
             self.numLinesRemoved += numFullLines
             
-            self.level = self.numLinesRemoved // 10
-            print('level: ' + str(self.level)) 
+#            self.level = self.numLinesRemoved // 10
+#            print('level: ' + str(self.level)) 
 
             # number of clear lines | points
             # 1				40
             # 2			       100
             # 3			       300
             # 4			      1200        
-            point_table = [40, 100, 300, 1200]
+#            point_table = [40, 100, 300, 1200]
             
-            self.score += (self.level + 1)*point_table[numFullLines - 1]       
-            print('score: ' + str(self.score)) 
-            
-            self.msg2Statusbar.emit(str(self.numLinesRemoved))
+#            self.score += (self.level + 1)*point_table[numFullLines - 1]       
+#            print('score: ' + str(self.score)) 
+
+            # After full lines are cleared, emit the "lines_cleared" signal
+            # with the number of cleared full lines in this round
+            self.lines_cleared.emit(numFullLines)
 
             self.isWaitingAfterLine = True
             self.curPiece.setShape(Tetrominoe.NoShape)
@@ -608,6 +637,7 @@ class Shape:
 def main():
 
     app = QApplication([])
+    app.setStyleSheet('.QLabel { font-size: 24pt;}')    
     tetris = Tetris()
     sys.exit(app.exec())
 
