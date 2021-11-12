@@ -7,6 +7,8 @@ This is a Tetris game clone.
 
 Author: Jan Bodnar
 Website: zetcode.com
+
+Adapted by Bach Nguyen
 """
 
 import random
@@ -95,7 +97,8 @@ class Tetris(QMainWindow):
         self.tboard.start()
 
 #        self.resize(180, 380)
-        self.resize(180*3, 380)
+#        self.resize(180*3, 380)
+        self.resize(180*3*2, 380*2)       
         self.center()
         self.setWindowTitle('Tetris')
         self.show()
@@ -138,11 +141,11 @@ class Board(QFrame):
         self.curX = 0
         self.curY = 0
         self.numLinesRemoved = 0
-        self.board = []
+        self.board = [] # origin (0, 0) is the bottom left corner
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: gray;')  
-        self.setFixedSize(180, 380) 
+        self.setFixedSize(180*2, 380*2) 
         
         self.isStarted = False
         self.isPaused = False
@@ -338,24 +341,31 @@ class Board(QFrame):
         numFullLines = 0
         rowsToRemove = []
 
-        for i in range(Board.BoardHeight):
+        for i in range(Board.BoardHeight): # bottom up
 
             n = 0
-            for j in range(Board.BoardWidth):
+            line = []
+            for j in range(Board.BoardWidth): # left to right
                 if not self.shapeAt(j, i) == Tetrominoe.NoShape:
+                    line.append(self.shapeAt(j, i))
                     n += 1
 
-            if n == 10:
+            if n == Board.BoardWidth:
+                print('row ' + str(i) + ' is full ==> ' + str(line))
                 rowsToRemove.append(i)
+                
+                if len(rowsToRemove) == 4:
+                    break;
 
+        print(rowsToRemove)
         rowsToRemove.reverse()
-
-        for m in rowsToRemove:
-
-            for k in range(m, Board.BoardHeight):
-                for l in range(Board.BoardWidth):
-                    self.setShapeAt(l, k, self.shapeAt(l, k + 1))
-
+        print(rowsToRemove)
+      
+        for i in rowsToRemove:
+            for j in range(Board.BoardWidth):
+                print('\tSHAPE at (' + str(i) + ', ' + str(j) + '): ' + str(self.shapeAt(j, i)))
+                self.setShapeAt(j, i, self.shapeAt(j, i + 1))
+                    
         numFullLines = numFullLines + len(rowsToRemove)
 
         if numFullLines > 0:
@@ -363,10 +373,10 @@ class Board(QFrame):
                                         
             self.numLinesRemoved += numFullLines
             
-            self.level = self.numLinesRemoved//10
+            self.level = self.numLinesRemoved // 10
             print('level: ' + str(self.level)) 
 
-            # number of clear lines	| points
+            # number of clear lines | points
             # 1				40
             # 2			       100
             # 3			       300
