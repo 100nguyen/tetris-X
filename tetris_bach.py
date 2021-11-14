@@ -13,6 +13,7 @@ Adapted by Bach Nguyen
 
 import random
 import sys
+import threading, queue
 
 from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal, QObject, pyqtSlot, QRect
 from PyQt6.QtGui import QPainter, QColor
@@ -211,7 +212,7 @@ class Board_base(QFrame):
         self.curPiece = Shape()
         
         for k in range(1, 8):
-            print(k)
+#            print(k)
             self.curPiece.setShape(k)
 
 #            self.curX = Board.BoardWidth // 2 + 1
@@ -238,26 +239,28 @@ class Board_base(QFrame):
                 self.curX = 7
                 self.curY = 2                                                         
             
-            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
+#            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
             for i in range(4):
                 x = self.curX + self.curPiece.x(i)
                 y = self.curY - self.curPiece.y(i)
-                print( '\t(x, y) is (%s, %s)' % (x, y))
+#                print( '\t(x, y) is (%s, %s)' % (x, y))
                 
                 self.drawSquare(painter, 
                                 rect.left() + x * self.squareWidth(),
                                 boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                                 self.curPiece.shape())
 
-        # mockup of next Shape
-        self.curPiece.setShape(Tetrominoe.SquareShape)
+        # paint next piece
+        self.curPiece.setShape(self.next_shape) 
+                               
         self.curX = 4
         self.curY = 20
+        
         for i in range(4):
             x = self.curX + self.curPiece.x(i)
             y = self.curY - self.curPiece.y(i)
-            print( '\t\t(x, y) is (%s, %s)' % (x, y))
+#            print( '\t\t(x, y) is (%s, %s)' % (x, y))
                 
             self.drawSquare(painter, 
                             rect.left() + x * self.squareWidth(),
@@ -329,7 +332,8 @@ class Board(QFrame):
     BoardWidth = 10
     BoardHeight = 22
     Speed = 300 # Each 300 ms a new game cycle will start.
-
+    PieceQueueDepth = 3
+    
 #    score = 0
 #    level = 0
 
@@ -345,6 +349,12 @@ class Board(QFrame):
         self.timer = QBasicTimer()
         self.isWaitingAfterLine = False
 
+        self.numPieces = 0
+
+        self.nextPiece = Shape()
+        self.nextPiece.setRandomShape()
+        print('***  FIRST piece %s ***' % (self.nextPiece.shape()))
+                                          
         self.curX = 0
         self.curY = 0
         self.numLinesRemoved = 0
@@ -544,42 +554,78 @@ class Board(QFrame):
 
 
     def removeFullLines(self):
+#################################
         """removes all full lines from the board"""
 
         numFullLines = 0
         rowsToRemove = []
 
-        for i in range(Board.BoardHeight): # bottom up
+        for i in range(Board.BoardHeight):
 
             n = 0
-            line = []
-            for j in range(Board.BoardWidth): # left to right
+            for j in range(Board.BoardWidth):
                 if not self.shapeAt(j, i) == Tetrominoe.NoShape:
-                    line.append(self.shapeAt(j, i))
                     n += 1
 
             if n == Board.BoardWidth:
-                print('row ' + str(i) + ' is full ==> ' + str(line))
                 rowsToRemove.append(i)
-                
-                if len(rowsToRemove) == 4:
-                    break;
 
-        print(rowsToRemove)
         rowsToRemove.reverse()
-        print(rowsToRemove)
-      
-        for i in rowsToRemove:
-            for j in range(Board.BoardWidth):
-                print('\tSHAPE at (' + str(i) + ', ' + str(j) + '): ' + str(self.shapeAt(j, i)))
-                self.setShapeAt(j, i, self.shapeAt(j, i + 1))
-                    
+
+        for m in rowsToRemove:
+
+            for i in range(m, Board.BoardHeight):
+                for j in range(Board.BoardWidth):
+                    self.setShapeAt(j, i, self.shapeAt(j, i + 1))
+
         numFullLines = numFullLines + len(rowsToRemove)
 
         if numFullLines > 0:
-            print('numFullLines: ' + str(numFullLines))  
-                                        
-            self.numLinesRemoved += numFullLines
+            self.numLinesRemoved = self.numLinesRemoved + numFullLines
+
+            # After full lines are cleared, emit the "lines_cleared" signal
+            # with the number of cleared full lines in this round
+            self.lines_cleared.emit(numFullLines)
+            
+            self.isWaitingAfterLine = True
+            self.curPiece.setShape(Tetrominoe.NoShape)
+            self.update()
+#################################
+
+#        numFullLines = 0
+#        rowsToRemove = []
+
+#        for i in range(Board.BoardHeight): # bottom up
+
+#            n = 0
+#            line = []
+#            for j in range(Board.BoardWidth): # left to right
+#                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
+#                    line.append(self.shapeAt(j, i))
+#                    n += 1
+
+#            if n == Board.BoardWidth:
+#                print('row ' + str(i) + ' is full ==> ' + str(line))
+#                rowsToRemove.append(i)
+                
+#                if len(rowsToRemove) == 4:
+#                    break;
+
+#        print(rowsToRemove)
+#        rowsToRemove.reverse()
+#        print(rowsToRemove)
+      
+#        for i in rowsToRemove:
+#            for j in range(Board.BoardWidth):
+#                print('\tSHAPE at (' + str(i) + ', ' + str(j) + '): ' + str(self.shapeAt(j, i)))
+#                self.setShapeAt(j, i, self.shapeAt(j, i + 1))
+                    
+#        numFullLines = numFullLines + len(rowsToRemove)
+
+#        if numFullLines > 0:
+#            print('numFullLines: ' + str(numFullLines))  
+#                                        
+#            self.numLinesRemoved += numFullLines
             
 #            self.level = self.numLinesRemoved // 10
 #            print('level: ' + str(self.level)) 
@@ -596,22 +642,31 @@ class Board(QFrame):
 
             # After full lines are cleared, emit the "lines_cleared" signal
             # with the number of cleared full lines in this round
-            self.lines_cleared.emit(numFullLines)
+#            self.lines_cleared.emit(numFullLines)
 
-            self.isWaitingAfterLine = True
-            self.curPiece.setShape(Tetrominoe.NoShape)
-            self.update()
+#            self.isWaitingAfterLine = True
+#            self.curPiece.setShape(Tetrominoe.NoShape)
+#            self.update()
 
 
     def newPiece(self):
         """creates a new shape"""
+        
+        self.numPieces += 1
+        print('*** New Piece ID: %s ***' % (self.numPieces))
 
-        self.curPiece = Shape()
-        self.curPiece.setRandomShape()
+        self.curPiece = self.nextPiece
+        print('***  Current piece %s ***' % (self.curPiece.shape()))
+        
+        self.nextPiece = Shape()
+        self.nextPiece.setRandomShape()              
+        self.nextShape.emit(self.nextPiece.shape())
+        
+#        self.curPiece = Shape()
+#        self.curPiece.setRandomShape()
+                                                              
         self.curX = Board.BoardWidth // 2 + 1
         self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
-
-        self.nextShape.emit(self.curPiece.shape())
    
         if not self.tryMove(self.curPiece, self.curX, self.curY):
 
