@@ -14,7 +14,7 @@ Adapted by Bach Nguyen
 import random
 import sys
 
-from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal, QObject, pyqtSlot
+from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal, QObject, pyqtSlot, QRect
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox,
     QWidget, QMainWindow,  QApplication)
@@ -34,7 +34,8 @@ class Tetris(QMainWindow):
 
     def initUI(self):
         """initiates application UI"""
-                
+
+        # LEFT FRAME                
         hbox = QHBoxLayout()
         
         self.left = QVBoxLayout()
@@ -64,12 +65,15 @@ class Tetris(QMainWindow):
         self.left.addWidget(self.linesValue)
                       
         self.left.addStretch(1)  
-                        
+ 
+         # CENTER FRAME - Board                         
         self.tboard = Board(self)
-                
-        self.right = QFrame()
-        self.right.setFrameShape(QFrame.Shape.StyledPanel)
 
+         # RIGHT FRAME - Queue                 
+#        self.right = QFrame()
+#        self.right.setFrameShape(QFrame.Shape.StyledPanel)
+        self.right = Board_base(self)
+        
         hbox.addLayout(self.left)
         hbox.addWidget(self.tboard)
         hbox.addWidget(self.right)
@@ -86,10 +90,11 @@ class Tetris(QMainWindow):
         # Connect the Board's signals to slots                                     
         self.tboard.msg2Statusbar[str].connect(self.statusbar.showMessage)
         self.tboard.lines_cleared.connect(self.on_lines_cleared)
- 
+        self.tboard.nextShape.connect(self.right.on_nextShape)
+         
         # start game                
         self.tboard.start()
-
+        
 #        self.resize(180, 380)
         self.resize(180*3, 380) #
 #        self.resize(270*3, 570)    # x1.5   
@@ -135,8 +140,180 @@ class Tetris(QMainWindow):
         self.scoreValue.setNum(self.main_score)      
         print('\tmain_score: %s' % (self.main_score)) 
             
+# start of Right Board
+class Board_base(QFrame):
+    
+    BoardWidth = 10
+    BoardHeight = 22
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.initBoard()
+
+
+    def initBoard(self):
+        """initiates board"""
+
+        self.curX = 5
+        self.curY = 5
+
+        self.board = [] # origin (0, 0) is the bottom left corner
+
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setStyleSheet('background-color: black;') 
+        self.setFixedSize(180, 380)         
+#        self.setFixedSize(270, 570) # 1.5x
+        
+        self.clearBoard()
+        self.update()
+
+    def shapeAt(self, x, y):
+        """determines shape at the board position"""
+
+        return self.board[(y * Board.BoardWidth) + x]
+
+
+    def setShapeAt(self, x, y, shape):
+        """sets a shape at the board"""
+
+        self.board[(y * Board.BoardWidth) + x] = shape
+
+
+    def squareWidth(self):
+        """returns the width of one square"""
+
+        return self.contentsRect().width() // Board.BoardWidth
+
+
+    def squareHeight(self):
+        """returns the height of one square"""
+
+        return self.contentsRect().height() // Board.BoardHeight
+
+    def paintEvent(self, event):
+        """paints all shapes of the game"""
+
+        painter = QPainter(self)
+        rect = self.contentsRect()
+
+        boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
+
+#        for i in range(Board.BoardHeight):
+#            for j in range(Board.BoardWidth):
+#                shape = self.shapeAt(j, Board.BoardHeight - i - 1)
+
+#                if shape != Tetrominoe.NoShape:
+#                    self.drawSquare(painter,
+#                                    rect.left() + j * self.squareWidth(),
+#                                    boardTop + i * self.squareHeight(), shape)
+
+        self.curPiece = Shape()
+        
+        for k in range(1, 8):
+            print(k)
+            self.curPiece.setShape(k)
+
+#            self.curX = Board.BoardWidth // 2 + 1
+ 
+            if (k == 1):
+                self.curX = 2
+                self.curY = 13
+            elif (k == 2):
+                self.curX = 7
+                self.curY = 13                                                               
+            elif (k == 3):
+                self.curX = 1
+                self.curY = 9
+            elif (k == 4):
+                self.curX = 7
+                self.curY = 9                
+            elif (k == 5):
+                self.curX = 4
+                self.curY = 6
+            elif (k == 6):
+                self.curX = 2
+                self.curY = 2
+            else: # (k == 7)
+                self.curX = 7
+                self.curY = 2                                                         
             
+            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
+            for i in range(4):
+                x = self.curX + self.curPiece.x(i)
+                y = self.curY - self.curPiece.y(i)
+                print( '\t(x, y) is (%s, %s)' % (x, y))
+                
+                self.drawSquare(painter, 
+                                rect.left() + x * self.squareWidth(),
+                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                                self.curPiece.shape())
+
+        # mockup of next Shape
+        self.curPiece.setShape(Tetrominoe.SquareShape)
+        self.curX = 4
+        self.curY = 20
+        for i in range(4):
+            x = self.curX + self.curPiece.x(i)
+            y = self.curY - self.curPiece.y(i)
+            print( '\t\t(x, y) is (%s, %s)' % (x, y))
+                
+            self.drawSquare(painter, 
+                            rect.left() + x * self.squareWidth(),
+                            boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                            self.curPiece.shape())
+
+        rect = QRect(10, 15, 25, 25)
+        painter.drawRect(rect)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
+                                        
+    def clearBoard(self):
+        """clears shapes from the board"""
+
+        for i in range(Board.BoardHeight * Board.BoardWidth):
+            self.board.append(Tetrominoe.NoShape)
+            
+
+    def drawSquare(self, painter, x, y, shape):
+        """draws a square of a shape"""
+
+#        colorTable = [0x008080, # Teal
+#                      0x800000, # Maroon
+#                      0x00FFFF, # Aqua
+#                      0xFF0000, # Red
+#                      0x000080, # Navy
+#                      0xC0C0C0, # Silver 
+#                      0xFFFF00, # Yellow
+#                      0x008000] # Green
+        colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
+                      0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
+        color = QColor(colorTable[shape])
+        painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
+                         self.squareHeight() - 2, color)
+
+        painter.setPen(color.lighter())
+        painter.drawLine(x, y + self.squareHeight() - 1, x, y)
+        painter.drawLine(x, y, x + self.squareWidth() - 1, y)
+
+        painter.setPen(color.darker())
+        painter.drawLine(x + 1, y + self.squareHeight() - 1,
+                         x + self.squareWidth() - 1, y + self.squareHeight() - 1)
+        painter.drawLine(x + self.squareWidth() - 1,
+                         y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
+
+
+    # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
+    @pyqtSlot(int)
+    def on_nextShape(self, shape):
+        self.next_shape = shape
+        print('Next Shape: (%s).' % (self.next_shape))
+        self.update()
+
+  
+# end of Right Board
+            
+# ORIGINAL            
 class Board(QFrame):
 
     msg2Statusbar = pyqtSignal(str)
@@ -144,9 +321,13 @@ class Board(QFrame):
     # Signal emitted when full lines are cleared, carrying the number of lines cleared
     # in this round
     lines_cleared = pyqtSignal(int) 
-     
+
+    # Signal emitted when full lines are cleared, carrying the number of lines cleared
+    # in this round
+    nextShape = pyqtSignal(int) 
+         
     BoardWidth = 10
-    BoardHeight = 20 #22
+    BoardHeight = 22
     Speed = 300 # Each 300 ms a new game cycle will start.
 
 #    score = 0
@@ -430,6 +611,8 @@ class Board(QFrame):
         self.curX = Board.BoardWidth // 2 + 1
         self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
+        self.nextShape.emit(self.curPiece.shape())
+   
         if not self.tryMove(self.curPiece, self.curX, self.curY):
 
             self.curPiece.setShape(Tetrominoe.NoShape)
@@ -463,6 +646,14 @@ class Board(QFrame):
     def drawSquare(self, painter, x, y, shape):
         """draws a square of a shape"""
 
+#        colorTable = [0x008080, # Teal
+#                      0x800000, # Maroon
+#                      0x00FFFF, # Aqua
+#                      0xFF0000, # Red
+#                      0x000080, # Navy
+#                      0xC0C0C0, # Silver 
+#                      0xFFFF00, # Yellow
+#                      0x008000] # Green
         colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
                       0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
 
