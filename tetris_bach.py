@@ -346,6 +346,8 @@ class Board(QFrame):
     def initBoard(self):
         """initiates board"""
 
+        # TODO: reset LEFT frame
+
         self.timer = QBasicTimer()
         self.isWaitingAfterLine = False
 
@@ -673,7 +675,16 @@ class Board(QFrame):
             self.curPiece.setShape(Tetrominoe.NoShape)
             self.timer.stop()
             self.isStarted = False
-            self.msg2Statusbar.emit("Game over")
+            
+            reply = QMessageBox.critical(self, 'GAME OVER!',
+                        "New Game?", QMessageBox.StandardButton.Yes |
+                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+            if reply == QMessageBox.StandardButton.Yes:
+                self.initBoard()
+                self.start()
+                       
+            self.msg2Statusbar.emit("Game over!")
 
 
     def tryMove(self, newPiece, newX, newY):
