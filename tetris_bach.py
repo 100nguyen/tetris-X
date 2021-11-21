@@ -199,18 +199,6 @@ class Board_base(QFrame):
         self.clearBoard()
         self.update()
 
-    def shapeAt(self, x, y):
-        """determines shape at the board position"""
-
-        return self.board[(y * Board.BoardWidth) + x]
-
-
-    def setShapeAt(self, x, y, shape):
-        """sets a shape at the board"""
-
-        self.board[(y * Board.BoardWidth) + x] = shape
-
-
     def squareWidth(self):
         """returns the width of one square"""
 
@@ -388,7 +376,7 @@ class Board(QFrame):
 
         clockTimer = QTimer(self)
         clockTimer.timeout.connect(self.showTime)
-        clockTimer.start(self.Speed) # update every 300 milliseconds
+        clockTimer.start(1000) # update every second
 
         self.showTime()
 
@@ -397,7 +385,6 @@ class Board(QFrame):
 
         self.timePlayed = 0
         self.tDelta = 0
-        self.numPieces = 0
 
         self.nextPiece = Shape()
         self.nextPiece.setRandomShape()
@@ -702,9 +689,6 @@ class Board(QFrame):
     def newPiece(self):
         """creates a new shape"""
         
-        self.numPieces += 1
-        print('*** New Piece ID: %s ***' % (self.numPieces))
-
         self.curPiece = self.nextPiece
         print('***  Current piece %s ***' % (self.curPiece.shape()))
         
@@ -783,16 +767,15 @@ class Board(QFrame):
     def showTime(self):
         currentTime = QTime.currentTime()
 
-#        clock = currentTime.toString('hh:mm:ss')
+        clock = currentTime.toString('hh:mm:ss')
 #        print(clock)
          
         if (not self.isPaused):# and (not self.isStarted):
             self.currentTime = QDateTime().currentDateTime()         
-            self.timePlayed += self.startTime.msecsTo(self.currentTime)
-            self.tDelta = datetime.timedelta(microseconds = self.timePlayed)
-
-        print('Time: ', self.tDelta)                              
-        self.msg2Statusbar.emit('Time: ' + str(self.tDelta))
+            self.timePlayed += self.startTime.secsTo(self.currentTime)
+            self.tDelta = datetime.timedelta(seconds = self.timePlayed)
+                            
+        self.msg2Statusbar.emit('Clock: ' + clock)
         
 class Tetrominoe:
 
@@ -807,6 +790,7 @@ class Tetrominoe:
 
 
 class Shape:
+    numPieces = 0       
 
     coordsTable = (
         ((0, 0), (0, 0), (0, 0), (0, 0)),
@@ -848,6 +832,9 @@ class Shape:
     def setRandomShape(self):
         """chooses a random shape"""
 
+        Shape.numPieces += 1
+        self.id = self.numPieces
+        print('*** numPieces: %s, ID: %s  ***' % (Shape.numPieces, self.id))
         self.setShape(random.randint(1, 7))
 
 
