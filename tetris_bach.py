@@ -13,9 +13,11 @@ Adapted by Bach Nguyen
 
 import random
 import sys
+import time, timeit, datetime
 import threading, queue
 
-from PyQt6.QtCore import Qt, QBasicTimer, pyqtSignal, QObject, pyqtSlot, QRect
+from PyQt6.QtCore import (Qt, QDate, QTime, QDateTime, QTimer, QBasicTimer, pyqtSignal, QObject,    
+    pyqtSlot, QRect)
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox,
     QWidget, QMainWindow,  QApplication)
@@ -97,7 +99,7 @@ class Tetris(QMainWindow):
         self.tboard.start()
         
 #        self.resize(180, 380)
-        self.resize(180*3, 380) #
+        self.resize(180*3, 380) 
 #        self.resize(270*3, 570)    # x1.5   
         self.center()
         self.setWindowTitle('Tetris')
@@ -119,27 +121,54 @@ class Tetris(QMainWindow):
     def on_lines_cleared(self, n):
         print('Number of lines cleared (%s) in this round.' % (n))
 
-        # Update and display SCORE
-        self.main_lines += n
-        self.linesValue.setNum(self.main_lines)
-        print('\tmain_lines: %s.' % (self.main_lines))
+        if n > 4:
+            # "Game Over!" code
 
-        # Update and display LEVEL        
-        self.main_level = self.main_lines // 10
-        self.levelValue.setNum(self.main_level)        
-        print('\tmain_level: %s' % (self.main_level)) 
+            datetime = QDateTime.currentDateTime()                
+#            t0 = time.clock()
+            print('Game Over! SCORE: ', self.main_score, 'Local datetime: ' + datetime.toString())
+#            t_delta = time.clock() - t0           
+#            print("Time elapsed: ", t_delta) # CPU seconds elapsed (floating point)
+                        
+            reply = QMessageBox.critical(self, 'GAME OVER!',
+                        "New Game?", QMessageBox.StandardButton.Yes |
+                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
 
-        # n |		Points
-        #=================================
-        # 1                 40
-        # 2                100
-        # 3                300
-        # 4               1200        
-        point_table = [40, 100, 300, 1200]
+            if reply == QMessageBox.StandardButton.Yes:
+#                self.initBoard()
+#                self.start()
+                print('SCORE: ', self.main_score)
+                self.main_lines = self.main_level = self.main_score = 0  
+
+                self.linesValue.setNum(self.main_lines)
+                self.levelValue.setNum(self.main_level) 
+                self.scoreValue.setNum(self.main_score)                         
+
+                self.tboard.initBoard()
+                self.tboard.start()
+                                        
+        else:
+            # Update and display SCORE
+            self.main_lines += n
+            self.linesValue.setNum(self.main_lines)
+            print('\tmain_lines: %s.' % (self.main_lines))
+
+            # Update and display LEVEL        
+            self.main_level = self.main_lines // 10
+            self.levelValue.setNum(self.main_level)        
+            print('\tmain_level: %s' % (self.main_level)) 
+
+            # n |		Points
+            #=================================
+            # 1                 40
+            # 2                100
+            # 3                300
+            # 4               1200        
+            point_table = [40, 100, 300, 1200]
             
-        self.main_score += (self.main_level + 1)*point_table[n - 1] 
-        self.scoreValue.setNum(self.main_score)      
-        print('\tmain_score: %s' % (self.main_score)) 
+            self.main_score += (self.main_level + 1)*point_table[n - 1] 
+            self.scoreValue.setNum(self.main_score)      
+            print('\tmain_score: %s' % (self.main_score)) 
             
 # start of Right Board
 class Board_base(QFrame):
@@ -163,7 +192,8 @@ class Board_base(QFrame):
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: black;') 
-        self.setFixedSize(180, 380)         
+        self.setFixedSize(170, 340)           
+#        self.setFixedSize(180, 380)         
 #        self.setFixedSize(270, 570) # 1.5x
         
         self.clearBoard()
@@ -198,6 +228,10 @@ class Board_base(QFrame):
         painter = QPainter(self)
         rect = self.contentsRect()
 
+#        squareW = self.squareWidth()
+#        squareH = self.squareHeight()
+#        print('Square W x H: %s x % s' % (squareW, squareH))
+        
         boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
 
 #        for i in range(Board.BoardHeight):
@@ -333,7 +367,13 @@ class Board(QFrame):
     BoardHeight = 22
     Speed = 300 # Each 300 ms a new game cycle will start.
     PieceQueueDepth = 3
-    
+    timePlayed = 0
+    tDelta = 0
+    startTime = QDateTime().currentDateTime() 
+
+    isPaused = False
+    isStarted = False
+                
 #    score = 0
 #    level = 0
 
@@ -346,11 +386,17 @@ class Board(QFrame):
     def initBoard(self):
         """initiates board"""
 
-        # TODO: reset LEFT frame
+        clockTimer = QTimer(self)
+        clockTimer.timeout.connect(self.showTime)
+        clockTimer.start(self.Speed) # update every 300 milliseconds
+
+        self.showTime()
 
         self.timer = QBasicTimer()
         self.isWaitingAfterLine = False
 
+        self.timePlayed = 0
+        self.tDelta = 0
         self.numPieces = 0
 
         self.nextPiece = Shape()
@@ -361,7 +407,7 @@ class Board(QFrame):
         self.curY = 0
         self.numLinesRemoved = 0
         self.board = [] # origin (0, 0) is the bottom left corner
-
+        
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: gray;') 
         self.setFixedSize(180, 380)         
@@ -398,7 +444,7 @@ class Board(QFrame):
 
     def start(self):
         """starts game"""
-
+        
         if self.isPaused:
             return
 
@@ -407,15 +453,17 @@ class Board(QFrame):
         self.numLinesRemoved = 0
         self.clearBoard()
 
-        self.msg2Statusbar.emit('GOOD LUCK!')
+#        self.msg2Statusbar.emit('GOOD LUCK!')
 
         self.newPiece()
+        
+        self.startTime = QDateTime().currentDateTime()      
         self.timer.start(Board.Speed, self)
 
 
     def pause(self):
         """pauses game"""
-
+        
         if not self.isStarted:
             return
 
@@ -423,12 +471,12 @@ class Board(QFrame):
 
         if self.isPaused:
             self.timer.stop()
-            self.msg2Statusbar.emit("PAUSED")
-
+                                        
         else:
+    
+            self.startTime = QDateTime().currentDateTime()           
             self.timer.start(Board.Speed, self)
-            self.msg2Statusbar.emit('Playing...')
- 
+            
         self.update()
 
 
@@ -580,10 +628,10 @@ class Board(QFrame):
                 for j in range(Board.BoardWidth):
                     self.setShapeAt(j, i, self.shapeAt(j, i + 1))
 
-        numFullLines = numFullLines + len(rowsToRemove)
+        numFullLines += len(rowsToRemove)
 
         if numFullLines > 0:
-            self.numLinesRemoved = self.numLinesRemoved + numFullLines
+            self.numLinesRemoved += self.numLinesRemoved
 
             # After full lines are cleared, emit the "lines_cleared" signal
             # with the number of cleared full lines in this round
@@ -675,16 +723,11 @@ class Board(QFrame):
             self.curPiece.setShape(Tetrominoe.NoShape)
             self.timer.stop()
             self.isStarted = False
-            
-            reply = QMessageBox.critical(self, 'GAME OVER!',
-                        "New Game?", QMessageBox.StandardButton.Yes |
-                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
 
-            if reply == QMessageBox.StandardButton.Yes:
-                self.initBoard()
-                self.start()
-                       
-            self.msg2Statusbar.emit("Game over!")
+            # emit the "lines_cleared" signal
+            # with the "Game Over!" code of 100
+            self.lines_cleared.emit(100)                                   
+ #           self.msg2Statusbar.emit("Game over!")
 
 
     def tryMove(self, newPiece, newX, newY):
@@ -737,7 +780,20 @@ class Board(QFrame):
         painter.drawLine(x + self.squareWidth() - 1,
                          y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
 
+    def showTime(self):
+        currentTime = QTime.currentTime()
 
+#        clock = currentTime.toString('hh:mm:ss')
+#        print(clock)
+         
+        if (not self.isPaused):# and (not self.isStarted):
+            self.currentTime = QDateTime().currentDateTime()         
+            self.timePlayed += self.startTime.msecsTo(self.currentTime)
+            self.tDelta = datetime.timedelta(microseconds = self.timePlayed)
+
+        print('Time: ', self.tDelta)                              
+        self.msg2Statusbar.emit('Time: ' + str(self.tDelta))
+        
 class Tetrominoe:
 
     NoShape = 0
