@@ -233,45 +233,45 @@ class Board_base(QFrame):
 
         self.curPiece = Shape()
         
-        for k in range(1, 8):
+#        for k in range(1, 8):
 #            print(k)
-            self.curPiece.setShape(k)
+#            self.curPiece.setShape(k)
 
 #            self.curX = Board.BoardWidth // 2 + 1
  
-            if (k == 1):
-                self.curX = 2
-                self.curY = 13
-            elif (k == 2):
-                self.curX = 7
-                self.curY = 13                                                               
-            elif (k == 3):
-                self.curX = 1
-                self.curY = 9
-            elif (k == 4):
-                self.curX = 7
-                self.curY = 9                
-            elif (k == 5):
-                self.curX = 4
-                self.curY = 6
-            elif (k == 6):
-                self.curX = 2
-                self.curY = 2
-            else: # (k == 7)
-                self.curX = 7
-                self.curY = 2                                                         
+#            if (k == 1):
+#                self.curX = 2
+#                self.curY = 13
+#            elif (k == 2):
+#                self.curX = 7
+#                self.curY = 13                                                               
+#            elif (k == 3):
+#                self.curX = 1
+#                self.curY = 9
+#            elif (k == 4):
+#                self.curX = 7
+#                self.curY = 9                
+#            elif (k == 5):
+#                self.curX = 4
+#                self.curY = 6
+#            elif (k == 6):
+#                self.curX = 2
+#                self.curY = 2
+#            else: # (k == 7)
+#                self.curX = 7
+#                self.curY = 2                                                         
             
 #            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
-            for i in range(4):
-                x = self.curX + self.curPiece.x(i)
-                y = self.curY - self.curPiece.y(i)
+#            for i in range(4):
+#                x = self.curX + self.curPiece.x(i)
+#                y = self.curY - self.curPiece.y(i)
 #                print( '\t(x, y) is (%s, %s)' % (x, y))
                 
-                self.drawSquare(painter, 
-                                rect.left() + x * self.squareWidth(),
-                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
-                                self.curPiece.shape())
+#                self.drawSquare(painter, 
+#                                rect.left() + x * self.squareWidth(),
+#                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+#                                self.curPiece.shape())
 
         # paint next piece
         self.curPiece.setShape(self.next_shape) 
@@ -599,21 +599,33 @@ class Board(QFrame):
 
         for i in range(Board.BoardHeight):
 
-            n = 0
-            for j in range(Board.BoardWidth):
-                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
-                    n += 1
+#            start = i * Board.BoardWidth
+#            end   = start + Board.BoardWidth - 1
+#            line = self.board[start:(start + Board.BoardWidth - 1)]
+#            
+#            print(line)
 
-            if n == Board.BoardWidth:
+            if self.getLine(i).count(Tetrominoe.NoShape) == 0:
                 rowsToRemove.append(i)
+                            
+#            n = 0
+#            for j in range(Board.BoardWidth):
+#                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
+#                    n += 1
+
+#            if n == Board.BoardWidth:
+#                rowsToRemove.append(i)
+
 
         rowsToRemove.reverse()
 
         for m in rowsToRemove:
 
             for i in range(m, Board.BoardHeight):
-                for j in range(Board.BoardWidth):
-                    self.setShapeAt(j, i, self.shapeAt(j, i + 1))
+            
+                self.removeLine(i)
+#                for j in range(Board.BoardWidth):
+#                    self.setShapeAt(j, i, self.shapeAt(j, i + 1))
 
         numFullLines += len(rowsToRemove)
 
@@ -776,7 +788,19 @@ class Board(QFrame):
             self.tDelta = datetime.timedelta(seconds = self.timePlayed)
                             
         self.msg2Statusbar.emit('Clock: ' + clock)
-        
+
+    def getLine(self, rowIndex):
+        start = rowIndex * Board.BoardWidth
+        end   = start + Board.BoardWidth
+        line = self.board[start:end]            
+        print(line)
+        return line
+
+    def removeLine(self, rowIndex):
+        start = rowIndex * Board.BoardWidth
+        end   = start + Board.BoardWidth
+        self.board[start:end] = self.getLine(rowIndex + 1)           
+                        
 class Tetrominoe:
 
     NoShape = 0
@@ -805,6 +829,7 @@ class Shape:
 
     def __init__(self):
 
+        self.id = 0
         self.coords = [[0, 0] for i in range(4)]
         self.pieceShape = Tetrominoe.NoShape
 
