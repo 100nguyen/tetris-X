@@ -42,27 +42,30 @@ class Tetris(QMainWindow):
         hbox = QHBoxLayout()
         
         self.left = QVBoxLayout()
-        
+                
         scoreTitle = QLabel('SCORE')       
         self.scoreValue = QLabel('0')
-        self.scoreValue.setStyleSheet("color: cyan;"
-                                      "background-color: black;") 
+        self.scoreValue.setStyleSheet('color: cyan;'
+                                      'background-color: black;'
+                                      'font: bold 24px;') 
         self.scoreValue.setAlignment(Qt.AlignmentFlag.AlignRight)     
         self.left.addWidget(scoreTitle)
         self.left.addWidget(self.scoreValue)
  
         levelTitle = QLabel('LEVEL')       
         self.levelValue = QLabel('0') 
-        self.levelValue.setStyleSheet("color: white;"
-                                      "background-color: black;")         
+        self.levelValue.setStyleSheet('color: white;'
+                                      'background-color: black;'
+                                      'font: bold 24px;') 
         self.levelValue.setAlignment(Qt.AlignmentFlag.AlignRight)                                    
         self.left.addWidget(levelTitle)
         self.left.addWidget(self.levelValue)
  
         linesTitle = QLabel('LINES')       
         self.linesValue = QLabel('0')
-        self.linesValue.setStyleSheet("color: yellow;"
-                                      "background-color: black;")         
+        self.linesValue.setStyleSheet('color: yellow;'
+                                      'background-color: black;'
+                                      'font: bold 24px;')       
         self.linesValue.setAlignment(Qt.AlignmentFlag.AlignRight)  
         self.left.addWidget(linesTitle)
         self.left.addWidget(self.linesValue)
@@ -355,9 +358,6 @@ class Board(QFrame):
     BoardHeight = 22
     Speed = 300 # Each 300 ms a new game cycle will start.
     PieceQueueDepth = 3
-    timePlayed = 0
-    tDelta = 0
-    startTime = QDateTime().currentDateTime() 
 
     isPaused = False
     isStarted = False
@@ -368,6 +368,9 @@ class Board(QFrame):
     def __init__(self, parent):
         super().__init__(parent)
 
+        self.timePlayed = 0
+        self.tDelta = 0
+    
         self.initBoard()
 
 
@@ -385,7 +388,7 @@ class Board(QFrame):
 
         self.timePlayed = 0
         self.tDelta = 0
-
+        
         self.nextPiece = Shape()
         self.nextPiece.setRandomShape()
         print('***  FIRST piece %s ***' % (self.nextPiece.shape()))
@@ -440,11 +443,11 @@ class Board(QFrame):
         self.numLinesRemoved = 0
         self.clearBoard()
 
-#        self.msg2Statusbar.emit('GOOD LUCK!')
-
         self.newPiece()
         
-        self.startTime = QDateTime().currentDateTime()      
+        self.timePlayed = 0
+        self.tDelta = 0
+             
         self.timer.start(Board.Speed, self)
 
 
@@ -459,9 +462,7 @@ class Board(QFrame):
         if self.isPaused:
             self.timer.stop()
                                         
-        else:
-    
-            self.startTime = QDateTime().currentDateTime()           
+        else:       
             self.timer.start(Board.Speed, self)
             
         self.update()
@@ -591,47 +592,18 @@ class Board(QFrame):
 
 
     def removeFullLines(self):
-#################################
         """removes all full lines from the board"""
-
-        numFullLines = 0
-
-#        rowsToRemove = []
-
-#        for i in range(Board.BoardHeight):
-
-#            start = i * Board.BoardWidth
-#            end   = start + Board.BoardWidth - 1
-#            line = self.board[start:(start + Board.BoardWidth - 1)]
-#            
-#            print(line)
-
-#            if self.getLine(i).count(Tetrominoe.NoShape) == 0:
-#                rowsToRemove.append(i)
-                            
-#            n = 0
-#            for j in range(Board.BoardWidth):
-#                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
-#                    n += 1
-
-#            if n == Board.BoardWidth:
-#                rowsToRemove.append(i)
-
 
         rowsToRemove = [ i for i in range(Board.BoardHeight) 
                            if self.getLine(i).count(Tetrominoe.NoShape) == 0 ]
-        print(rowsToRemove)
+
         rowsToRemove.reverse()
-        print(rowsToRemove)
         
         for m in rowsToRemove:
+            for i in range(m, Board.BoardHeight):            
+                self.removeFullLine(i)
 
-            for i in range(m, Board.BoardHeight):
-            
-                self.removeLine(i)
-#                for j in range(Board.BoardWidth):
-#                    self.setShapeAt(j, i, self.shapeAt(j, i + 1))
-
+        numFullLines = 0
         numFullLines += len(rowsToRemove)
 
         if numFullLines > 0:
@@ -644,63 +616,6 @@ class Board(QFrame):
             self.isWaitingAfterLine = True
             self.curPiece.setShape(Tetrominoe.NoShape)
             self.update()
-#################################
-
-#        numFullLines = 0
-#        rowsToRemove = []
-
-#        for i in range(Board.BoardHeight): # bottom up
-
-#            n = 0
-#            line = []
-#            for j in range(Board.BoardWidth): # left to right
-#                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
-#                    line.append(self.shapeAt(j, i))
-#                    n += 1
-
-#            if n == Board.BoardWidth:
-#                print('row ' + str(i) + ' is full ==> ' + str(line))
-#                rowsToRemove.append(i)
-                
-#                if len(rowsToRemove) == 4:
-#                    break;
-
-#        print(rowsToRemove)
-#        rowsToRemove.reverse()
-#        print(rowsToRemove)
-      
-#        for i in rowsToRemove:
-#            for j in range(Board.BoardWidth):
-#                print('\tSHAPE at (' + str(i) + ', ' + str(j) + '): ' + str(self.shapeAt(j, i)))
-#                self.setShapeAt(j, i, self.shapeAt(j, i + 1))
-                    
-#        numFullLines = numFullLines + len(rowsToRemove)
-
-#        if numFullLines > 0:
-#            print('numFullLines: ' + str(numFullLines))  
-#                                        
-#            self.numLinesRemoved += numFullLines
-            
-#            self.level = self.numLinesRemoved // 10
-#            print('level: ' + str(self.level)) 
-
-            # number of clear lines | points
-            # 1				40
-            # 2			       100
-            # 3			       300
-            # 4			      1200        
-#            point_table = [40, 100, 300, 1200]
-            
-#            self.score += (self.level + 1)*point_table[numFullLines - 1]       
-#            print('score: ' + str(self.score)) 
-
-            # After full lines are cleared, emit the "lines_cleared" signal
-            # with the number of cleared full lines in this round
-#            self.lines_cleared.emit(numFullLines)
-
-#            self.isWaitingAfterLine = True
-#            self.curPiece.setShape(Tetrominoe.NoShape)
-#            self.update()
 
 
     def newPiece(self):
@@ -723,12 +638,12 @@ class Board(QFrame):
 
             self.curPiece.setShape(Tetrominoe.NoShape)
             self.timer.stop()
+            self.isPaused = True # added to stop Time for "Game Over!" event
             self.isStarted = False
 
             # emit the "lines_cleared" signal
             # with the "Game Over!" code of 100
             self.lines_cleared.emit(100)                                   
- #           self.msg2Statusbar.emit("Game over!")
 
 
     def tryMove(self, newPiece, newX, newY):
@@ -782,29 +697,27 @@ class Board(QFrame):
                          y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
 
     def showTime(self):
-        currentTime = QTime.currentTime()
+#        currentTime = QTime.currentTime()
+#        clock = currentTime.toString('hh:mm:ss')
+#        print(clock)                            
+#        self.msg2Statusbar.emit('Clock: ' + clock)
 
-        clock = currentTime.toString('hh:mm:ss')
-#        print(clock)
          
-        if (not self.isPaused):# and (not self.isStarted):
-            self.currentTime = QDateTime().currentDateTime()         
-            self.timePlayed += self.startTime.secsTo(self.currentTime)
+        if (not self.isPaused):# or (not self.isStarted):
+            self.timePlayed += 1
             self.tDelta = datetime.timedelta(seconds = self.timePlayed)
-                            
-        self.msg2Statusbar.emit('Clock: ' + clock)
+             
+        self.msg2Statusbar.emit('Time: ' + str(self.tDelta))       
 
     def getLine(self, rowIndex):
         start = rowIndex * Board.BoardWidth
-        end   = start + Board.BoardWidth
-        line = self.board[start:end]            
-        print(line)
+        line = self.board[start:(start + Board.BoardWidth)]            
+
         return line
 
-    def removeLine(self, rowIndex):
+    def removeFullLine(self, rowIndex):
         start = rowIndex * Board.BoardWidth
-        end   = start + Board.BoardWidth
-        self.board[start:end] = self.getLine(rowIndex + 1)           
+        self.board[start:(start + Board.BoardWidth)] = self.getLine(rowIndex + 1)           
                         
 class Tetrominoe:
 
@@ -966,8 +879,8 @@ class Shape:
 
 def main():
 
-    app = QApplication([])
-    app.setStyleSheet('.QLabel { font-size: 24pt;}')    
+    app = QApplication([]) 
+#    app.setStyleSheet('.QLabel { font-size: 24pt;}')       
     tetris = Tetris()
     sys.exit(app.exec())
 
