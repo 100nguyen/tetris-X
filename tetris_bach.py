@@ -595,9 +595,10 @@ class Board(QFrame):
         """removes all full lines from the board"""
 
         numFullLines = 0
-        rowsToRemove = []
 
-        for i in range(Board.BoardHeight):
+#        rowsToRemove = []
+
+#        for i in range(Board.BoardHeight):
 
 #            start = i * Board.BoardWidth
 #            end   = start + Board.BoardWidth - 1
@@ -605,8 +606,8 @@ class Board(QFrame):
 #            
 #            print(line)
 
-            if self.getLine(i).count(Tetrominoe.NoShape) == 0:
-                rowsToRemove.append(i)
+#            if self.getLine(i).count(Tetrominoe.NoShape) == 0:
+#                rowsToRemove.append(i)
                             
 #            n = 0
 #            for j in range(Board.BoardWidth):
@@ -617,8 +618,12 @@ class Board(QFrame):
 #                rowsToRemove.append(i)
 
 
+        rowsToRemove = [ i for i in range(Board.BoardHeight) 
+                           if self.getLine(i).count(Tetrominoe.NoShape) == 0 ]
+        print(rowsToRemove)
         rowsToRemove.reverse()
-
+        print(rowsToRemove)
+        
         for m in rowsToRemove:
 
             for i in range(m, Board.BoardHeight):
