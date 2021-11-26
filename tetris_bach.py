@@ -100,6 +100,7 @@ class Tetris(QMainWindow):
          
         # start game                
         self.tboard.start()
+#        self.tboard.pause()
         
 #        self.resize(180, 380)
         self.resize(180*3, 380) 
@@ -697,7 +698,7 @@ class Board(QFrame):
                          y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
 
     def showTime(self):
-#        currentTime = QTime.currentTime()
+        currentTime = QTime.currentTime()
 #        clock = currentTime.toString('hh:mm:ss')
 #        print(clock)                            
 #        self.msg2Statusbar.emit('Clock: ' + clock)
@@ -707,7 +708,7 @@ class Board(QFrame):
             self.timePlayed += 1
             self.tDelta = datetime.timedelta(seconds = self.timePlayed)
              
-        self.msg2Statusbar.emit('Time: ' + str(self.tDelta))       
+        self.msg2Statusbar.emit('Clock: ' + currentTime.toString('hh:mm:ss') + ' **** Time: ' + str(self.tDelta))       
 
     def getLine(self, rowIndex):
         start = rowIndex * Board.BoardWidth
