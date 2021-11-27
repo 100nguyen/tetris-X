@@ -134,10 +134,22 @@ class Tetris(QMainWindow):
 #            t_delta = time.clock() - t0           
 #            print("Time elapsed: ", t_delta) # CPU seconds elapsed (floating point)
                         
-            reply = QMessageBox.critical(self, 'GAME OVER!',
-                        "New Game?", QMessageBox.StandardButton.Yes |
-                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-
+#            reply = QMessageBox.(self, 'GAME OVER!',
+#                        "New Game?", QMessageBox.StandardButton.Yes |
+#                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+            dlg = QMessageBox(self)
+            dlg.setWindowTitle('GAME OVER!')
+            dlg.setText("HIGH SCORES")
+            dlg.setIcon(QMessageBox.Icon.Question)
+     
+            dlg.setStandardButtons(QMessageBox.StandardButton.No|QMessageBox.StandardButton.Yes)
+            dlg.setDefaultButton(QMessageBox.StandardButton.Yes)
+ 
+            dlg.setInformativeText("You made Top Ten.  Do you want to play again?")
+            dlg.setDetailedText("1\tabc\txxxx\n2\tefg\tyyyy\n3\n4\n5\n6\n7\n8\n9\n10")
+            
+            reply = dlg.exec()
+            
             if reply == QMessageBox.StandardButton.Yes:
 #                self.initBoard()
 #                self.start()
@@ -315,7 +327,7 @@ class Board_base(QFrame):
 #                      0xC0C0C0, # Silver 
 #                      0xFFFF00, # Yellow
 #                      0x008000] # Green
-        colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
+        colorTable = [0xC0C0C0, 0xCC6666, 0x66CC66, 0x6666CC,
                       0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
         color = QColor(colorTable[shape])
         painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
