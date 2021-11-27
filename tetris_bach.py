@@ -16,13 +16,35 @@ import sys
 import time, timeit, datetime
 import threading, queue
 
+from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import (Qt, QDate, QTime, QDateTime, QTimer, QBasicTimer, pyqtSignal, QObject,    
     pyqtSlot, QRect)
-from PyQt6.QtGui import QPainter, QColor
-from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QMessageBox,
+from PyQt6.QtGui import QPainter, QColor, QFont, QIcon
+from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QDialog, QMessageBox, QPushButton, QDialogButtonBox,
+    QTableWidget, QTableWidgetItem,
     QWidget, QMainWindow,  QApplication)
 
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
 
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            # See below for the nested-list data structure.
+            # .row() indexes into the outer list,
+            # .column() indexes into the sub-list
+            return self._data[index.row()][index.column()]
+
+    def rowCount(self, index):
+        # The length of the outer list.
+        return len(self._data)
+
+    def columnCount(self, index):
+        # The following takes the first sub-list, and returns
+        # the length (only works if all rows are an equal length)
+        return len(self._data[0])
+        
 class Tetris(QMainWindow):
 
     main_score = 0
@@ -42,7 +64,9 @@ class Tetris(QMainWindow):
         hbox = QHBoxLayout()
         
         self.left = QVBoxLayout()
-                
+         
+        # SCORE
+               
         scoreTitle = QLabel('SCORE')       
         self.scoreValue = QLabel('0')
         self.scoreValue.setStyleSheet('color: cyan;'
@@ -51,7 +75,10 @@ class Tetris(QMainWindow):
         self.scoreValue.setAlignment(Qt.AlignmentFlag.AlignRight)     
         self.left.addWidget(scoreTitle)
         self.left.addWidget(self.scoreValue)
+
  
+        # LEVEL
+        
         levelTitle = QLabel('LEVEL')       
         self.levelValue = QLabel('0') 
         self.levelValue.setStyleSheet('color: white;'
@@ -61,6 +88,9 @@ class Tetris(QMainWindow):
         self.left.addWidget(levelTitle)
         self.left.addWidget(self.levelValue)
  
+
+        # LINES
+        
         linesTitle = QLabel('LINES')       
         self.linesValue = QLabel('0')
         self.linesValue.setStyleSheet('color: yellow;'
@@ -69,7 +99,58 @@ class Tetris(QMainWindow):
         self.linesValue.setAlignment(Qt.AlignmentFlag.AlignRight)  
         self.left.addWidget(linesTitle)
         self.left.addWidget(self.linesValue)
-                      
+
+
+        # HIGH SCORES
+        
+        tableTitle = QLabel('HIGH SCORES')       
+        tableTitle.setStyleSheet('color: green;'
+                                 'background-color: black;'
+                                 'font: bold 20px;')       
+        tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+        self.left.addWidget(tableTitle)
+                
+#        highScoreTable = QTableWidget()
+#        highScoreTable.setRowCount(10)
+#        highScoreTable.setColumnCount(2) 
+#        highScoreTable.setStyleSheet('color: white;'
+#                                     'background-color: navy;'
+#                                     'font: bold 11px;')
+
+#        highScoreTable.setItem(0, 0, QTableWidgetItem('Rank'))
+#        highScoreTable.setItem(0, 1, QTableWidgetItem('Name'))
+#        highScoreTable.setItem(0, 2, QTableWidgetItem('Score'))
+        
+#        for i in range(10):
+
+#            highScoreTable.setItem(i, 0, QTableWidgetItem('Player ' + str(i + 1))) 
+#            highScoreTable.setItem(i, 1, QTableWidgetItem(str((11-i)*1000)))
+#            highScoreTable.setItem(i, 0, QTableWidgetItem(str(i)))
+
+        self.table = QtWidgets.QTableView() 
+        
+#        data = [
+#          [4, 9, 2],
+#          [1, 0, 0],
+#          [3, 5, 0],
+#          [3, 3, 2],
+#          [7, 8, 9],
+#        ]
+
+#        self.records = [['Player ' + str(i + 1), # Name
+#                         (random.randint(1, 10))*1000 + i, # Score
+#                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")] # Date and Time
+#                         for i in range(10)]
+
+        # sort scores from high to low
+#        self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
+        self.records = [['JD', 0, '10000 BC']]
+
+        self.model = TableModel(self.records)
+        self.table.setModel(self.model)
+                               
+        self.left.addWidget(self.table)
+                                                                                                          
         self.left.addStretch(1)  
  
          # CENTER FRAME - Board                         
@@ -128,31 +209,77 @@ class Tetris(QMainWindow):
         if n > 4:
             # "Game Over!" code
 
-            datetime = QDateTime.currentDateTime()                
-#            t0 = time.clock()
-            print('Game Over! SCORE: ', self.main_score, 'Local datetime: ' + datetime.toString())
-#            t_delta = time.clock() - t0           
-#            print("Time elapsed: ", t_delta) # CPU seconds elapsed (floating point)
-                        
+#            datetime = QDateTime.currentDateTime()                
+#            print('Game Over! SCORE: ', self.main_score, 'Local datetime: ' + datetime.toString())                        
 #            reply = QMessageBox.(self, 'GAME OVER!',
 #                        "New Game?", QMessageBox.StandardButton.Yes |
 #                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-            dlg = QMessageBox(self)
-            dlg.setWindowTitle('GAME OVER!')
-            dlg.setText("HIGH SCORES")
-            dlg.setIcon(QMessageBox.Icon.Question)
+            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            record = ['Bach', self.main_score, now]
+                
+            if (len(self.records) < 10):
+                self.records.append(record)    
+            elif (self.records[9][1] < self.main_score):
+                self.records.pop()
+                self.records.append(record)    
+
+            self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
+            self.model = TableModel(self.records)
+            self.table.setModel(self.model)
+                    
+            print(record)
+            print(self.records)
+
+#            dlg = QMessageBox(self)
+#            dlg.setWindowTitle('GAME OVER!')
+#            dlg.setText("HIGH SCORES")
+#            dlg.setIcon(QMessageBox.Icon.Question)
      
-            dlg.setStandardButtons(QMessageBox.StandardButton.No|QMessageBox.StandardButton.Yes)
-            dlg.setDefaultButton(QMessageBox.StandardButton.Yes)
+#            dlg.setStandardButtons(QMessageBox.StandardButton.No|QMessageBox.StandardButton.Yes)
+#            dlg.setDefaultButton(QMessageBox.StandardButton.Yes)
  
-            dlg.setInformativeText("You made Top Ten.  Do you want to play again?")
-            dlg.setDetailedText("1\tabc\txxxx\n2\tefg\tyyyy\n3\n4\n5\n6\n7\n8\n9\n10")
+#            dlg.setInformativeText("You made Top Ten.  Do you want to play again?")
+#            dlg.setDetailedText("1\tabc\txxxx\n2\tefg\tyyyy\n3\n4\n5\n6\n7\n8\n9\n10")
+
+            dlg = QDialog(self)
+            dlg.setWindowTitle('GAME OVER')
+
+            QBtn = QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
+
+            buttonBox = QDialogButtonBox(QBtn)
+#            buttonBox.accepted.connect(self.accept)
+#            buttonBox.rejected.connect(self.reject)
+
+            layout = QVBoxLayout()
             
+            tableTitle = QLabel('HIGH SCORES')       
+            tableTitle.setStyleSheet('color: green;'
+                                     'background-color: black;'
+                                     'font: bold 20px;')       
+            tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+            layout.addWidget(tableTitle)
+
+            table = QtWidgets.QTableView() 
+            table.setModel(self.model)
+                               
+            layout.addWidget(table)
+                                                                                                          
+
+                            
+            message = QLabel("You made Top Ten.  Do you want to play again?")
+            layout.addWidget(message)
+            layout.addWidget(buttonBox)
+            
+            layout.addStretch(1) 
+                        
+            dlg.setLayout(layout) 
+                
             reply = dlg.exec()
             
-            if reply == QMessageBox.StandardButton.Yes:
+#            if reply == QMessageBox.StandardButton.Yes:
 #                self.initBoard()
 #                self.start()
+            if reply == QDialogButtonBox.StandardButton.Yes:
                 print('SCORE: ', self.main_score)
                 self.main_lines = self.main_level = self.main_score = 0  
 
@@ -185,6 +312,14 @@ class Tetris(QMainWindow):
             self.main_score += (self.main_level + 1)*point_table[n - 1] 
             self.scoreValue.setNum(self.main_score)      
             print('\tmain_score: %s' % (self.main_score)) 
+
+    def sort_scores_from_high_to_low(sublist):
+        # reverse = None (Sorts in Ascending order) 
+        # key is set to sort using second element of sublist
+        # sublist lambda has been used 
+        sublist.sort(key = lambda x: x[1], reverse=True) 
+        return sublist       
+
             
 # start of Right Board
 class Board_base(QFrame):
