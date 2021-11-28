@@ -100,6 +100,8 @@ class CustomDialog(QDialog):
         self.layout.addWidget(self.tableTitle)
         
         self.table = QtWidgets.QTableView() 
+#        self.table.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setModel(model)
                                
         self.layout.addWidget(self.table)
@@ -196,7 +198,7 @@ class Tetris(QMainWindow):
 #            highScoreTable.setItem(i, 0, QTableWidgetItem(str(i)))
 
         self.table = QtWidgets.QTableView() 
-        
+        self.table.horizontalHeader().setStretchLastSection(True)        
 #        data = [
 #          [4, 9, 2],
 #          [1, 0, 0],
