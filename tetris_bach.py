@@ -42,6 +42,13 @@ class TableModel(QtCore.QAbstractTableModel):
         super(TableModel, self).__init__()
         self._data = data
 
+    def headerData(self, p_int, Qt_Orientation, role=None):
+        if role == Qt.ItemDataRole.DisplayRole and Qt_Orientation==Qt.Orientation.Horizontal:
+            header = ['Name', 'Score', 'Date & Time']
+            return header[p_int]
+        else:
+            return QtCore.QAbstractTableModel.headerData(self, p_int, Qt_Orientation, role)
+            
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
             value = self._data[index.row()][index.column()]
@@ -100,7 +107,7 @@ class CustomDialog(QDialog):
         self.layout.addWidget(self.tableTitle)
         
         self.table = QtWidgets.QTableView() 
-#        self.table.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setModel(model)
                                
@@ -254,7 +261,7 @@ class Tetris(QMainWindow):
 #        self.tboard.pause()
         
 #        self.resize(180, 380)
-        self.resize(180*4, 380) 
+        self.resize(180*5, 380) 
 #        self.resize(270*3, 570)    # x1.5   
         self.center()
         self.setWindowTitle('Tetris')
