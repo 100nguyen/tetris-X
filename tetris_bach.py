@@ -11,6 +11,7 @@ Website: zetcode.com
 Adapted by Bach Nguyen
 """
 
+import json
 import random
 import sys
 import time, timeit, datetime
@@ -24,9 +25,6 @@ from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QDialog, 
     QTableWidget, QTableWidgetItem,
     QWidget, QMainWindow,  QApplication)
 
-
-
-#colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
 
 # The Olympic Medals Color Scheme palette has 6 colors which are 
 # American Gold '#D6AF36'
@@ -67,7 +65,7 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == Qt.ItemDataRole.TextAlignmentRole:
             value = self._data[index.row()][index.column()]
 
-            if isinstance(value, int) or isinstance(value, float):
+            if isinstance(value, int) or isinstance(value, float) or index.column() == 2:
                 # Align right, vertical middle.
                 return Qt.AlignmentFlag.AlignVCenter + Qt.AlignmentFlag.AlignRight 
                 
@@ -113,7 +111,7 @@ class CustomDialog(QDialog):
                                
         self.layout.addWidget(self.table)
                                                                                                                                       
-        message = QLabel("You made Top Ten.  Do you want to play again?")
+        message = QLabel("Do you want to play again?")
         self.layout.addWidget(message)
                     
         self.layout.addWidget(self.buttonBox)
@@ -121,7 +119,9 @@ class CustomDialog(QDialog):
         self.layout.addStretch(1)
          
         self.setLayout(self.layout)
-                
+
+        self.resize(180*3, 380) 
+                        
 class Tetris(QMainWindow):
 
     main_score = 0
@@ -187,42 +187,15 @@ class Tetris(QMainWindow):
         tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         self.left.addWidget(tableTitle)
                 
-#        highScoreTable = QTableWidget()
-#        highScoreTable.setRowCount(10)
-#        highScoreTable.setColumnCount(2) 
-#        highScoreTable.setStyleSheet('color: white;'
-#                                     'background-color: navy;'
-#                                     'font: bold 11px;')
-
-#        highScoreTable.setItem(0, 0, QTableWidgetItem('Rank'))
-#        highScoreTable.setItem(0, 1, QTableWidgetItem('Name'))
-#        highScoreTable.setItem(0, 2, QTableWidgetItem('Score'))
-        
-#        for i in range(10):
-
-#            highScoreTable.setItem(i, 0, QTableWidgetItem('Player ' + str(i + 1))) 
-#            highScoreTable.setItem(i, 1, QTableWidgetItem(str((11-i)*1000)))
-#            highScoreTable.setItem(i, 0, QTableWidgetItem(str(i)))
-
         self.table = QtWidgets.QTableView() 
         self.table.horizontalHeader().setStretchLastSection(True)        
-#        data = [
-#          [4, 9, 2],
-#          [1, 0, 0],
-#          [3, 5, 0],
-#          [3, 3, 2],
-#          [7, 8, 9],
-#        ]
 
-#        self.records = [['Player ' + str(i + 1), # Name
-#                         (random.randint(1, 10))*1000 + i, # Score
-#                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")] # Date and Time
-#                         for i in range(10)]
+        self.records = []
 
-        # sort scores from high to low
-#        self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
-        self.records = [['JD', 0, '10000 BC']]
-
+        # open output file for reading
+        with open('high_scores.json', 'r') as filehandle:
+            self.records = json.load(filehandle)
+    
         self.model = TableModel(self.records)
         self.table.setModel(self.model)
                                
@@ -234,8 +207,6 @@ class Tetris(QMainWindow):
         self.tboard = Board(self)
 
          # RIGHT FRAME - Queue                 
-#        self.right = QFrame()
-#        self.right.setFrameShape(QFrame.Shape.StyledPanel)
         self.right = Board_base(self)
         
         hbox.addLayout(self.left)
@@ -261,8 +232,8 @@ class Tetris(QMainWindow):
 #        self.tboard.pause()
         
 #        self.resize(180, 380)
-        self.resize(180*5, 380) 
-#        self.resize(270*3, 570)    # x1.5   
+        self.resize(180*4 + 90, 380) 
+ 
         self.center()
         self.setWindowTitle('Tetris')
         self.show()
@@ -277,20 +248,30 @@ class Tetris(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def closeEvent(self, event):
+        self.tboard.pause()
 
+        # open output file for writing
+        with open('high_scores.json', 'w') as filehandle:
+            json.dump(self.records, filehandle)
+    
+        reply = QMessageBox.question(self, 'Message',
+                    "Are you sure to quit?", QMessageBox.StandardButton.Yes |
+                    QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()
+        else:
+            event.ignore()
+            self.tboard.pause()
+            
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
     @pyqtSlot(int)
     def on_lines_cleared(self, n):
-        print('Number of lines cleared (%s) in this round.' % (n))
 
         if n > 4:
-            # "Game Over!" code
+            # "Game Over" code
 
-#            datetime = QDateTime.currentDateTime()                
-#            print('Game Over! SCORE: ', self.main_score, 'Local datetime: ' + datetime.toString())                        
-#            reply = QMessageBox.(self, 'GAME OVER!',
-#                        "New Game?", QMessageBox.StandardButton.Yes |
-#                        QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             record = ['Bach', self.main_score, now]
                 
@@ -304,24 +285,6 @@ class Tetris(QMainWindow):
             self.model = TableModel(self.records)
             self.table.setModel(self.model)
                     
-            print(record)
-            print(self.records)
-
-#            dlg = QMessageBox(self)
-#            dlg.setWindowTitle('GAME OVER!')
-#            dlg.setText("HIGH SCORES")
-#            dlg.setIcon(QMessageBox.Icon.Question)
-     
-#            dlg.setStandardButtons(QMessageBox.StandardButton.No|QMessageBox.StandardButton.Yes)
-#            dlg.setDefaultButton(QMessageBox.StandardButton.Yes)
- 
-#            dlg.setInformativeText("You made Top Ten.  Do you want to play again?")
-#            dlg.setDetailedText("1\tabc\txxxx\n2\tefg\tyyyy\n3\n4\n5\n6\n7\n8\n9\n10")
-            
-#            if reply == QMessageBox.StandardButton.Yes:
-#                self.initBoard()
-#                self.start()
-#            if reply == QDialogButtonBox.StandardButton.Yes:
             dlg = CustomDialog(self.model) 
 
             if dlg.exec():
@@ -340,12 +303,10 @@ class Tetris(QMainWindow):
             # Update and display SCORE
             self.main_lines += n
             self.linesValue.setNum(self.main_lines)
-            print('\tmain_lines: %s.' % (self.main_lines))
 
             # Update and display LEVEL        
             self.main_level = self.main_lines // 10
             self.levelValue.setNum(self.main_level)        
-            print('\tmain_level: %s' % (self.main_level)) 
 
             # n |		Points
             #=================================
@@ -357,7 +318,6 @@ class Tetris(QMainWindow):
             
             self.main_score += (self.main_level + 1)*point_table[n - 1] 
             self.scoreValue.setNum(self.main_score)      
-            print('\tmain_score: %s' % (self.main_score)) 
 
     def sort_scores_from_high_to_low(sublist):
         # reverse = None (Sorts in Ascending order) 
@@ -389,9 +349,8 @@ class Board_base(QFrame):
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: black;') 
-        self.setFixedSize(170, 340)           
-#        self.setFixedSize(180, 380)         
-#        self.setFixedSize(270, 570) # 1.5x
+         
+        self.setFixedSize(180, 380)         
         
         self.clearBoard()
         self.update()
@@ -430,45 +389,45 @@ class Board_base(QFrame):
 
         self.curPiece = Shape()
         
-#        for k in range(1, 8):
-#            print(k)
-#            self.curPiece.setShape(k)
+        for k in range(1, 8):
+            print(k)
+            self.curPiece.setShape(k)
 
-#            self.curX = Board.BoardWidth // 2 + 1
+            self.curX = Board.BoardWidth // 2 + 1
  
-#            if (k == 1):
-#                self.curX = 2
-#                self.curY = 13
-#            elif (k == 2):
-#                self.curX = 7
-#                self.curY = 13                                                               
-#            elif (k == 3):
-#                self.curX = 1
-#                self.curY = 9
-#            elif (k == 4):
-#                self.curX = 7
-#                self.curY = 9                
-#            elif (k == 5):
-#                self.curX = 4
-#                self.curY = 6
-#            elif (k == 6):
-#                self.curX = 2
-#                self.curY = 2
-#            else: # (k == 7)
-#                self.curX = 7
-#                self.curY = 2                                                         
+            if (k == 1):
+                self.curX = 2
+                self.curY = 13
+            elif (k == 2):
+                self.curX = 7
+                self.curY = 13                                                               
+            elif (k == 3):
+                self.curX = 1
+                self.curY = 9
+            elif (k == 4):
+                self.curX = 7
+                self.curY = 9                
+            elif (k == 5):
+                self.curX = 4
+                self.curY = 6
+            elif (k == 6):
+                self.curX = 2
+                self.curY = 2
+            else: # (k == 7)
+                self.curX = 7
+                self.curY = 2                                                         
             
 #            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
-#            for i in range(4):
-#                x = self.curX + self.curPiece.x(i)
-#                y = self.curY - self.curPiece.y(i)
+            for i in range(4):
+                x = self.curX + self.curPiece.x(i)
+                y = self.curY - self.curPiece.y(i)
 #                print( '\t(x, y) is (%s, %s)' % (x, y))
                 
-#                self.drawSquare(painter, 
-#                                rect.left() + x * self.squareWidth(),
-#                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
-#                                self.curPiece.shape())
+                self.drawSquare(painter, 
+                                rect.left() + x * self.squareWidth(),
+                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                                self.curPiece.shape())
 
         # paint next piece
         self.curPiece.setShape(self.next_shape) 
@@ -508,8 +467,22 @@ class Board_base(QFrame):
 #                      0xC0C0C0, # Silver 
 #                      0xFFFF00, # Yellow
 #                      0x008000] # Green
-        colorTable = [0xC0C0C0, 0xCC6666, 0x66CC66, 0x6666CC,
-                      0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
+#        colorTable = [0x000000, 
+#                      0xCC6666, # Z - Red
+#                      0x66CC66, # S - Green
+#                      0x6666CC, # I - Cyan
+#                      0x800080, # T - Purple
+#                      0xCC66CC, # O - Yellow
+#                      0x66CCCC, # J - Blue
+#                      0xDAAA00] # L - Orange
+        colorTable = [0x000000, #   - Black
+                      0xff0000, # Z - Red
+                      0x00ff00, # S - Green
+                      0x00ffff, # I - Cyan
+                      0x800080, # T - Purple
+                      0xffff00, # O - Yellow
+                      0xff7f00, # J - Orange
+                      0x0000ff] # L - Blue
         color = QColor(colorTable[shape])
         painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
                          self.squareHeight() - 2, color)
@@ -529,7 +502,6 @@ class Board_base(QFrame):
     @pyqtSlot(int)
     def on_nextShape(self, shape):
         self.next_shape = shape
-        print('Next Shape: (%s).' % (self.next_shape))
         self.update()
 
   
@@ -556,9 +528,6 @@ class Board(QFrame):
     isPaused = False
     isStarted = False
                 
-#    score = 0
-#    level = 0
-
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -585,7 +554,6 @@ class Board(QFrame):
         
         self.nextPiece = Shape()
         self.nextPiece.setRandomShape()
-        print('***  FIRST piece %s ***' % (self.nextPiece.shape()))
                                           
         self.curX = 0
         self.curY = 0
@@ -593,9 +561,8 @@ class Board(QFrame):
         self.board = [] # origin (0, 0) is the bottom left corner
         
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setStyleSheet('background-color: gray;') 
+        self.setStyleSheet('background-color: black;') 
         self.setFixedSize(180, 380)         
-#        self.setFixedSize(270, 570) # 1.5x
         
         self.isStarted = False
         self.isPaused = False
@@ -816,15 +783,11 @@ class Board(QFrame):
         """creates a new shape"""
         
         self.curPiece = self.nextPiece
-        print('***  Current piece %s ***' % (self.curPiece.shape()))
         
         self.nextPiece = Shape()
         self.nextPiece.setRandomShape()              
         self.nextShape.emit(self.nextPiece.shape())
-        
-#        self.curPiece = Shape()
-#        self.curPiece.setRandomShape()
-                                                              
+                                                                     
         self.curX = Board.BoardWidth // 2 + 1
         self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
    
@@ -873,9 +836,22 @@ class Board(QFrame):
 #                      0xC0C0C0, # Silver 
 #                      0xFFFF00, # Yellow
 #                      0x008000] # Green
-        colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
-                      0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
-
+#        colorTable = [0x000000, 
+#                      0xCC6666, # Z - Red
+#                      0x66CC66, # S - Green
+#                      0x6666CC, # I - Cyan
+#                      0x800080, # T - Purple
+#                      0xCC66CC, # O - Yellow
+#                      0x66CCCC, # J - Blue
+#                      0xDAAA00] # L - Orange
+        colorTable = [0x7f7f7f, #   - Gray
+                      0xff0000, # Z - Red
+                      0x00ff00, # S - Green
+                      0x00ffff, # I - Cyan
+                      0x800080, # T - Purple
+                      0xffff00, # O - Yellow
+                      0xff7f00, # J - Orange
+                      0x0000ff] # L - Blue
         color = QColor(colorTable[shape])
         painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
                          self.squareHeight() - 2, color)
@@ -892,12 +868,8 @@ class Board(QFrame):
 
     def showTime(self):
         currentTime = QTime.currentTime()
-#        clock = currentTime.toString('hh:mm:ss')
-#        print(clock)                            
-#        self.msg2Statusbar.emit('Clock: ' + clock)
-
          
-        if (not self.isPaused):# or (not self.isStarted):
+        if (not self.isPaused):
             self.timePlayed += 1
             self.tDelta = datetime.timedelta(seconds = self.timePlayed)
              
