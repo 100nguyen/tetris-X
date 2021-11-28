@@ -24,6 +24,19 @@ from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QDialog, 
     QTableWidget, QTableWidgetItem,
     QWidget, QMainWindow,  QApplication)
 
+
+
+#colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
+
+# The Olympic Medals Color Scheme palette has 6 colors which are 
+# American Gold '#D6AF36'
+# Pantone Yellow '#FEE101'
+# Light Silver '#D7D7D7'
+# Metallic Silver '#A7A7AD' 
+# Traditional Chocolate '#824A02'
+# Metallic Bronze '#A77044'
+colors = ['#D6AF36', '#A7A7AD', '#A77044', '#fddbc7']
+
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
         super(TableModel, self).__init__()
@@ -31,11 +44,32 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
-            # See below for the nested-list data structure.
-            # .row() indexes into the outer list,
-            # .column() indexes into the sub-list
-            return self._data[index.row()][index.column()]
+            value = self._data[index.row()][index.column()]
+#            if isinstance(value, datetime):
+#                return value.strftime('%Y-%m-%d')
 
+            return value
+                        
+        if role == Qt.ItemDataRole.BackgroundRole:
+            i = index.row() 
+            if i > 2:
+                i = 3
+                
+            return QtGui.QColor(colors[i]) 
+            
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            value = self._data[index.row()][index.column()]
+
+            if isinstance(value, int) or isinstance(value, float):
+                # Align right, vertical middle.
+                return Qt.AlignmentFlag.AlignVCenter + Qt.AlignmentFlag.AlignRight 
+                
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == 2:
+#            value = self._data[index.row()][index.column()]
+#            if isinstance(value, datetime):
+#                return QtGui.QIcon('calendar.png')          
+            return QtGui.QIcon('calendar.png')
+            
     def rowCount(self, index):
         # The length of the outer list.
         return len(self._data)
@@ -44,7 +78,41 @@ class TableModel(QtCore.QAbstractTableModel):
         # The following takes the first sub-list, and returns
         # the length (only works if all rows are an equal length)
         return len(self._data[0])
+
+class CustomDialog(QDialog):
+    def __init__(self, model):
+        super().__init__()
+
+        self.setWindowTitle("GAME OVER")
+
+        QBtn = QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
+
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QVBoxLayout()
+        self.tableTitle = QLabel('HIGH SCORES')       
+        self.tableTitle.setStyleSheet('color: green;'
+                                     'background-color: black;'
+                                     'font: bold 20px;')       
+        self.tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+        self.layout.addWidget(self.tableTitle)
         
+        self.table = QtWidgets.QTableView() 
+        self.table.setModel(model)
+                               
+        self.layout.addWidget(self.table)
+                                                                                                                                      
+        message = QLabel("You made Top Ten.  Do you want to play again?")
+        self.layout.addWidget(message)
+                    
+        self.layout.addWidget(self.buttonBox)
+        
+        self.layout.addStretch(1)
+         
+        self.setLayout(self.layout)
+                
 class Tetris(QMainWindow):
 
     main_score = 0
@@ -184,7 +252,7 @@ class Tetris(QMainWindow):
 #        self.tboard.pause()
         
 #        self.resize(180, 380)
-        self.resize(180*3, 380) 
+        self.resize(180*4, 380) 
 #        self.resize(270*3, 570)    # x1.5   
         self.center()
         self.setWindowTitle('Tetris')
@@ -240,46 +308,14 @@ class Tetris(QMainWindow):
  
 #            dlg.setInformativeText("You made Top Ten.  Do you want to play again?")
 #            dlg.setDetailedText("1\tabc\txxxx\n2\tefg\tyyyy\n3\n4\n5\n6\n7\n8\n9\n10")
-
-            dlg = QDialog(self)
-            dlg.setWindowTitle('GAME OVER')
-
-            QBtn = QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
-
-            buttonBox = QDialogButtonBox(QBtn)
-#            buttonBox.accepted.connect(self.accept)
-#            buttonBox.rejected.connect(self.reject)
-
-            layout = QVBoxLayout()
-            
-            tableTitle = QLabel('HIGH SCORES')       
-            tableTitle.setStyleSheet('color: green;'
-                                     'background-color: black;'
-                                     'font: bold 20px;')       
-            tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-            layout.addWidget(tableTitle)
-
-            table = QtWidgets.QTableView() 
-            table.setModel(self.model)
-                               
-            layout.addWidget(table)
-                                                                                                          
-
-                            
-            message = QLabel("You made Top Ten.  Do you want to play again?")
-            layout.addWidget(message)
-            layout.addWidget(buttonBox)
-            
-            layout.addStretch(1) 
-                        
-            dlg.setLayout(layout) 
-                
-            reply = dlg.exec()
             
 #            if reply == QMessageBox.StandardButton.Yes:
 #                self.initBoard()
 #                self.start()
-            if reply == QDialogButtonBox.StandardButton.Yes:
+#            if reply == QDialogButtonBox.StandardButton.Yes:
+            dlg = CustomDialog(self.model) 
+
+            if dlg.exec():
                 print('SCORE: ', self.main_score)
                 self.main_lines = self.main_level = self.main_score = 0  
 
@@ -289,7 +325,8 @@ class Tetris(QMainWindow):
 
                 self.tboard.initBoard()
                 self.tboard.start()
-                                        
+            else:
+                print('She said no')                                        
         else:
             # Update and display SCORE
             self.main_lines += n
