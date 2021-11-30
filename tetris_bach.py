@@ -787,8 +787,13 @@ class Board(QFrame):
         self.nextPiece = Shape()
         self.nextPiece.setRandomShape()              
         self.nextShape.emit(self.nextPiece.shape())
-                                                                     
-        self.curX = Board.BoardWidth // 2 + 1
+        # Tetromino start locations
+        # * The I and O spawn in the middle columns
+        # * The rest spawn in the left-middle columns
+        # * The tetriminoes spawn horizontally with J, L and T spawning flat-side first.
+        # * Spawn above playfield, row 21 for I, and 21/22 for all other tetriminoes.
+        # * Immediately drop one space if no existing Block is in its path                                                                   
+        self.curX = 3 #Board.BoardWidth // 2 + 1
         self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
    
         if not self.tryMove(self.curPiece, self.curX, self.curY):
@@ -888,13 +893,13 @@ class Board(QFrame):
 class Tetrominoe:
 
     NoShape = 0
-    ZShape = 1
-    SShape = 2
-    LineShape = 3
-    TShape = 4
-    SquareShape = 5
-    LShape = 6
-    MirroredLShape = 7
+    ZShape = 1         # Z - Red
+    SShape = 2         # S - Green
+    LineShape = 3      # I - Cyan
+    TShape = 4         # T - Purple
+    SquareShape = 5    # O - Yellow
+    LShape = 6         # J - Orange
+    MirroredLShape = 7 # L - Blue
 
 
 class Shape:
@@ -902,13 +907,13 @@ class Shape:
 
     coordsTable = (
         ((0, 0), (0, 0), (0, 0), (0, 0)),
-        ((0, -1), (0, 0), (-1, 0), (-1, 1)),
-        ((0, -1), (0, 0), (1, 0), (1, 1)),
-        ((0, -1), (0, 0), (0, 1), (0, 2)),
-        ((-1, 0), (0, 0), (1, 0), (0, 1)),
-        ((0, 0), (1, 0), (0, 1), (1, 1)),
-        ((-1, -1), (0, -1), (0, 0), (0, 1)),
-        ((1, -1), (0, -1), (0, 0), (0, 1))
+        ((0, -1), (1, -1), (1, 0), (2, 0)), #((0, -1), (0, 0), (-1, 0), (-1, 1)) Z
+        ((0, 0), (1, 0), (1, -1), (2, -1)),# ((0, -1), (0, 0), (1, 0), (1, 1)) S
+        ((0, 0), (1, 0), (2, 0), (3, 0)), #((0, -1), (0, 0), (0, 1), (0, 2)) I
+        ((0, 0), (1, 0), (2, 0), (1, -1)), # T
+        ((1, -1), (1, 0), (2, 0), (2, -1)), # O
+        ((0, 0), (1, 0), (2, 0), (2, -1)), #((-1, -1), (0, -1), (0, 0), (0, 1)) J
+        ((0, 0), (1, 0), (2, 0), (0, -1)) # ((1, -1), (0, -1), (0, 0), (0, 1)) L
     )
 
     def __init__(self):
