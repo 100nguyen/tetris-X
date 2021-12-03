@@ -12,6 +12,7 @@ Adapted by Bach Nguyen
 """
 
 import json
+import math
 import random
 import sys
 import time, timeit, datetime
@@ -264,7 +265,17 @@ class Tetris(QMainWindow):
         else:
             event.ignore()
             self.tboard.pause()
-            
+
+    def sort_scores_from_high_to_low(sublist):
+        # reverse = None (Sorts in Ascending order) 
+        # key is set to sort using second element of sublist
+        # sublist lambda has been used 
+        sublist.sort(key = lambda x: x[1], reverse=True) 
+        return sublist       
+
+    def test(level):
+        return 300;
+                            
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
     @pyqtSlot(int)
     def on_lines_cleared(self, n):
@@ -306,6 +317,15 @@ class Tetris(QMainWindow):
 
             # Update and display LEVEL        
             self.main_level = self.main_lines // 10
+            
+            # compute speed in msecs (See https://tetris.fandom.com/wiki/Tetris_Worlds)
+            x = self.main_level + 1 - 1
+            time = math.pow(0.8 - (0.007 * x), x)
+            print(' * Level: ', self.main_level, ', Time spent per row (seconds): ', time)
+            speed = int(1000 * time)
+            print('Speed in msecs: ', speed)
+            
+            
             self.levelValue.setNum(self.main_level)        
 
             # n |		Points
@@ -318,13 +338,6 @@ class Tetris(QMainWindow):
             
             self.main_score += (self.main_level + 1)*point_table[n - 1] 
             self.scoreValue.setNum(self.main_score)      
-
-    def sort_scores_from_high_to_low(sublist):
-        # reverse = None (Sorts in Ascending order) 
-        # key is set to sort using second element of sublist
-        # sublist lambda has been used 
-        sublist.sort(key = lambda x: x[1], reverse=True) 
-        return sublist       
 
             
 # start of Right Board
@@ -370,6 +383,8 @@ class Board_base(QFrame):
         """paints all shapes of the game"""
 
         painter = QPainter(self)
+        painter.setPen(QColor('#FFFFFF'))
+        
         rect = self.contentsRect()
 
 #        squareW = self.squareWidth()
@@ -377,20 +392,27 @@ class Board_base(QFrame):
 #        print('Square W x H: %s x % s' % (squareW, squareH))
         
         boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
+  
+        # draw horizontal lines
+               
+        for i in range(Board.BoardHeight):        
+            painter.drawLine(rect.left(), 
+                             boardTop + i * self.squareHeight(), 
+                             rect.right(), 
+                             boardTop + i * self.squareHeight())
+#            painter.drawLine(x, y, x + self.squareWidth() - 1, y)
 
-#        for i in range(Board.BoardHeight):
-#            for j in range(Board.BoardWidth):
-#                shape = self.shapeAt(j, Board.BoardHeight - i - 1)
-
-#                if shape != Tetrominoe.NoShape:
-#                    self.drawSquare(painter,
-#                                    rect.left() + j * self.squareWidth(),
-#                                    boardTop + i * self.squareHeight(), shape)
+        # draw vertical lines
+        
+        for j in range(Board.BoardWidth):     
+            painter.drawLine(rect.left() + j * self.squareWidth(), 
+                             boardTop, 
+                             rect.left() + j * self.squareWidth(), 
+                             rect.bottom())            
 
         self.curPiece = Shape()
         
         for k in range(1, 8):
-            print(k)
             self.curPiece.setShape(k)
 
             self.curX = Board.BoardWidth // 2 + 1
@@ -445,10 +467,10 @@ class Board_base(QFrame):
                             boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                             self.curPiece.shape())
 
-        rect = QRect(10, 15, 25, 25)
-        painter.drawRect(rect)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
-                                        
+#        rect = QRect(10, 15, 25, 25)
+#        painter.drawRect(rect)
+#        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
+                                                   
     def clearBoard(self):
         """clears shapes from the board"""
 
@@ -475,7 +497,7 @@ class Board_base(QFrame):
 #                      0xCC66CC, # O - Yellow
 #                      0x66CCCC, # J - Blue
 #                      0xDAAA00] # L - Orange
-        colorTable = [0x000000, #   - Black
+        colorTable = [0x000000, #0x5A5A5A, #   - Gray
                       0xff0000, # Z - Red
                       0x00ff00, # S - Green
                       0x00ffff, # I - Cyan
@@ -483,21 +505,20 @@ class Board_base(QFrame):
                       0xffff00, # O - Yellow
                       0xff7f00, # J - Orange
                       0x0000ff] # L - Blue
+                      
         color = QColor(colorTable[shape])
-        painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
-                         self.squareHeight() - 2, color)
-
         painter.setPen(color.lighter())
-        painter.drawLine(x, y + self.squareHeight() - 1, x, y)
-        painter.drawLine(x, y, x + self.squareWidth() - 1, y)
-
-        painter.setPen(color.darker())
-        painter.drawLine(x + 1, y + self.squareHeight() - 1,
-                         x + self.squareWidth() - 1, y + self.squareHeight() - 1)
-        painter.drawLine(x + self.squareWidth() - 1,
-                         y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
-
-
+                
+        brush = QtGui.QBrush()
+        brush.setColor(color)
+        brush.setStyle(Qt.BrushStyle.SolidPattern)
+        painter.setBrush(brush)
+            
+        painter.drawRect(x + 2, 
+                         y + 2, 
+                         self.squareWidth() - 4,
+                         self.squareHeight() - 4)
+                                       
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
     @pyqtSlot(int)
     def on_nextShape(self, shape):
@@ -906,14 +927,14 @@ class Shape:
     numPieces = 0       
 
     coordsTable = (
-        ((0, 0), (0, 0), (0, 0), (0, 0)),
-        ((-1, -1), (0, -1), (0,  0), (1,  0)), #((0, -1), (0, 0), (-1, 0), (-1, 1)) Z
-        ((-1,  0), ( 0, 0), (0, -1), (1, -1)), #((0, -1), (0, 0), (1, 0), (1, 1)) S
-        ((-1, 0), (0,  0), (1,  0), (2,  0)), #((0, -1), (0, 0), (0, 1), (0, 2)) I
-        (( 0, -1), (-1, 0), (0,  0), (1,  0)), # T
-        ((0, 0), (1, 0), (0, -1), (1, -1)), # O
-        (( 1, -1), (-1, 0), (0,  0), (1,  0)), #((-1, -1), (0, -1), (0, 0), (0, 1)) J
-        ((-1, -1), (-1, 0), (0,  0), (1,  0))  #((1, -1), (0, -1), (0, 0), (0, 1)) L
+        (( 0,  0), (0,  0),  (0,  0), (0,  0)),
+        ((-1, -1), ( 0, -1), (0,  0), (1,  0)), # Z
+        ((-1,  0), ( 0,  0), (0, -1), (1, -1)), # S
+        ((-1,  0), ( 0,  0), (1,  0), (2,  0)), # I
+        (( 0, -1), (-1,  0), (0,  0), (1,  0)), # T
+        (( 0,  0), ( 1,  0), (0, -1), (1, -1)), # O
+        (( 1, -1), (-1,  0), (0,  0), (1,  0)), # J
+        ((-1, -1), (-1,  0), (0,  0), (1,  0))  # L
     )
 
     def __init__(self):
