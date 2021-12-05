@@ -21,7 +21,7 @@ import threading, queue
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import (Qt, QDate, QTime, QDateTime, QTimer, QBasicTimer, pyqtSignal, QObject,    
     pyqtSlot, QRect)
-from PyQt6.QtGui import QPainter, QColor, QFont, QIcon
+from PyQt6.QtGui import QPainter, QColor, QFont, QIcon, QPen
 from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QDialog, QMessageBox, QPushButton, QDialogButtonBox,
     QTableWidget, QTableWidgetItem,
     QWidget, QMainWindow,  QApplication)
@@ -158,7 +158,7 @@ class Tetris(QMainWindow):
         # LEVEL
         
         levelTitle = QLabel('LEVEL')       
-        self.levelValue = QLabel('0') 
+        self.levelValue = QLabel('1') 
         self.levelValue.setStyleSheet('color: white;'
                                       'background-color: black;'
                                       'font: bold 24px;') 
@@ -273,7 +273,7 @@ class Tetris(QMainWindow):
         sublist.sort(key = lambda x: x[1], reverse=True) 
         return sublist       
 
-    def test(level):
+    def test(self, level):
         return 300;
                             
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
@@ -300,7 +300,9 @@ class Tetris(QMainWindow):
 
             if dlg.exec():
                 print('SCORE: ', self.main_score)
-                self.main_lines = self.main_level = self.main_score = 0  
+                self.main_lines = self.main_score = 0  
+
+                self.main_level = 1
 
                 self.linesValue.setNum(self.main_lines)
                 self.levelValue.setNum(self.main_level) 
@@ -316,7 +318,7 @@ class Tetris(QMainWindow):
             self.linesValue.setNum(self.main_lines)
 
             # Update and display LEVEL        
-            self.main_level = self.main_lines // 10
+            self.main_level = 1 + (self.main_lines // 10)
             
             # compute speed in msecs (See https://tetris.fandom.com/wiki/Tetris_Worlds)
             x = self.main_level + 1 - 1
@@ -361,7 +363,7 @@ class Board_base(QFrame):
         self.board = [] # origin (0, 0) is the bottom left corner
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setStyleSheet('background-color: black;') 
+        self.setStyleSheet('background-color: rgb(80, 80, 80);') 
          
         self.setFixedSize(180, 380)         
         
@@ -383,7 +385,7 @@ class Board_base(QFrame):
         """paints all shapes of the game"""
 
         painter = QPainter(self)
-        painter.setPen(QColor('#FFFFFF'))
+        painter.setPen(QColor(40, 40, 40))
         
         rect = self.contentsRect()
 
@@ -395,19 +397,20 @@ class Board_base(QFrame):
   
         # draw horizontal lines
                
-        for i in range(Board.BoardHeight):        
+        for i in range(Board.BoardHeight): 
+            y = boardTop + i * self.squareHeight()        
             painter.drawLine(rect.left(), 
-                             boardTop + i * self.squareHeight(), 
+                             y, 
                              rect.right(), 
-                             boardTop + i * self.squareHeight())
-#            painter.drawLine(x, y, x + self.squareWidth() - 1, y)
+                             y)
 
         # draw vertical lines
         
-        for j in range(Board.BoardWidth):     
-            painter.drawLine(rect.left() + j * self.squareWidth(), 
+        for j in range(Board.BoardWidth): 
+            x = rect.left() + j * self.squareWidth()            
+            painter.drawLine(x, 
                              boardTop, 
-                             rect.left() + j * self.squareWidth(), 
+                             x, 
                              rect.bottom())            
 
         self.curPiece = Shape()
@@ -424,7 +427,7 @@ class Board_base(QFrame):
                 self.curX = 7
                 self.curY = 13                                                               
             elif (k == 3):
-                self.curX = 1
+                self.curX = 2
                 self.curY = 9
             elif (k == 4):
                 self.curX = 7
@@ -498,27 +501,35 @@ class Board_base(QFrame):
 #                      0x66CCCC, # J - Blue
 #                      0xDAAA00] # L - Orange
         colorTable = [0x000000, #0x5A5A5A, #   - Gray
-                      0xff0000, # Z - Red
-                      0x00ff00, # S - Green
                       0x00ffff, # I - Cyan
+                      0xFF971C, # BEER --> 0xff7f00, # J - Orange
+                      0x0341AE, # COBALT BLUE --> 0x0000ff] # L - Blue 
+                      0xFFD500, # CYBER YELLOW --> 0xffff00, # O - Yellow                                                   
+                      0x72CB3B, # APPLE --> #0x00ff00, # S - Green
                       0x800080, # T - Purple
-                      0xffff00, # O - Yellow
-                      0xff7f00, # J - Orange
-                      0x0000ff] # L - Blue
+                      0xFF3213] # RYB RED --> 0xff0000, # Z - Red
                       
         color = QColor(colorTable[shape])
-        painter.setPen(color.lighter())
+        painter.setPen(color)
                 
         brush = QtGui.QBrush()
-        brush.setColor(color)
+        brush.setColor(color.lighter())
         brush.setStyle(Qt.BrushStyle.SolidPattern)
-        painter.setBrush(brush)
-            
-        painter.drawRect(x + 2, 
-                         y + 2, 
-                         self.squareWidth() - 4,
-                         self.squareHeight() - 4)
-                                       
+        painter.setBrush(brush)            
+        painter.drawRect(x + 1, 
+                         y + 1, 
+                         self.squareWidth()  - 2,
+                         self.squareHeight() - 2)
+
+#        brush.setColor(color)
+#        brush.setStyle(Qt.BrushStyle.SolidPattern)
+#        painter.setBrush(brush)
+        painter.setPen(color.darker())
+        painter.drawRect(x + 5, 
+                         y + 5, 
+                         self.squareWidth()  - 10,
+                         self.squareHeight() - 10)
+                                                                
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
     @pyqtSlot(int)
     def on_nextShape(self, shape):
@@ -582,7 +593,7 @@ class Board(QFrame):
         self.board = [] # origin (0, 0) is the bottom left corner
         
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setStyleSheet('background-color: black;') 
+        self.setStyleSheet('background-color: rgb(40, 40, 40);') 
         self.setFixedSize(180, 380)         
         
         self.isStarted = False
@@ -653,11 +664,39 @@ class Board(QFrame):
     def paintEvent(self, event):
         """paints all shapes of the game"""
 
+#        painter = QPainter(self)
+#        rect = self.contentsRect()
+
+#        boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
         painter = QPainter(self)
+        painter.setPen(QColor(80, 80, 80))
+        
         rect = self.contentsRect()
 
+#        squareW = self.squareWidth()
+#        squareH = self.squareHeight()
+#        print('Square W x H: %s x % s' % (squareW, squareH))
+        
         boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
+  
+        # draw horizontal lines
+               
+        for i in range(Board.BoardHeight): 
+            y = boardTop + i * self.squareHeight()        
+            painter.drawLine(rect.left(), 
+                             y, 
+                             rect.right(), 
+                             y)
 
+        # draw vertical lines
+        
+        for j in range(Board.BoardWidth): 
+            x = rect.left() + j * self.squareWidth()            
+            painter.drawLine(x, 
+                             boardTop, 
+                             x, 
+                             rect.bottom())  
+                             
         for i in range(Board.BoardHeight):
             for j in range(Board.BoardWidth):
                 shape = self.shapeAt(j, Board.BoardHeight - i - 1)
@@ -871,13 +910,13 @@ class Board(QFrame):
 #                      0x66CCCC, # J - Blue
 #                      0xDAAA00] # L - Orange
         colorTable = [0x7f7f7f, #   - Gray
-                      0xff0000, # Z - Red
-                      0x00ff00, # S - Green
                       0x00ffff, # I - Cyan
-                      0x800080, # T - Purple
-                      0xffff00, # O - Yellow
                       0xff7f00, # J - Orange
-                      0x0000ff] # L - Blue
+                      0x0000ff, # L - Blue                             
+                      0xffff00, # O - Yellow
+                      0x00ff00, # S - Green
+                      0x800080, # T - Purple
+                      0xff0000] # Z - Red
         color = QColor(colorTable[shape])
         painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
                          self.squareHeight() - 2, color)
@@ -914,13 +953,15 @@ class Board(QFrame):
 class Tetrominoe:
 
     NoShape = 0
-    ZShape = 1         # Z - Red
-    SShape = 2         # S - Green
-    LineShape = 3      # I - Cyan
-    TShape = 4         # T - Purple
-    SquareShape = 5    # O - Yellow
-    LShape = 6         # J - Orange
-    MirroredLShape = 7 # L - Blue
+    LineShape = 1      # I - Cyan
+    LShape = 2         # J - Orange
+    MirroredLShape = 3 # L - Blue
+    SquareShape = 4    # O - Yellow                
+    SShape = 5         # S - Green
+    TShape = 6         # T - Purple
+    ZShape = 7         # Z - Red
+
+
 
 
 class Shape:
@@ -928,13 +969,13 @@ class Shape:
 
     coordsTable = (
         (( 0,  0), (0,  0),  (0,  0), (0,  0)),
-        ((-1, -1), ( 0, -1), (0,  0), (1,  0)), # Z
-        ((-1,  0), ( 0,  0), (0, -1), (1, -1)), # S
         ((-1,  0), ( 0,  0), (1,  0), (2,  0)), # I
-        (( 0, -1), (-1,  0), (0,  0), (1,  0)), # T
-        (( 0,  0), ( 1,  0), (0, -1), (1, -1)), # O
         (( 1, -1), (-1,  0), (0,  0), (1,  0)), # J
-        ((-1, -1), (-1,  0), (0,  0), (1,  0))  # L
+        ((-1, -1), (-1,  0), (0,  0), (1,  0)),  # L                
+        (( 0,  0), ( 1,  0), (0, -1), (1, -1)), # O
+        ((-1,  0), ( 0,  0), (0, -1), (1, -1)), # S
+        (( 0, -1), (-1,  0), (0,  0), (1,  0)), # T
+        ((-1, -1), ( 0, -1), (0,  0), (1,  0)), # Z
     )
 
     def __init__(self):
