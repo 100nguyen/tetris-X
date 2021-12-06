@@ -487,8 +487,8 @@ class Board_base(QFrame):
                                 boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                                 self.curPiece.shape())
 
-        # paint next piece
-        self.curPiece.setShape(self.next_shape) 
+        # paint piece 1
+        self.curPiece.setShape(self.shape1) 
                                
         self.curX = 4
         self.curY = 20
@@ -496,7 +496,6 @@ class Board_base(QFrame):
         for i in range(4):
             x = self.curX + self.curPiece.x(i)
             y = self.curY - self.curPiece.y(i)
-#            print( '\t\t(x, y) is (%s, %s)' % (x, y))
                 
             self.drawSquare(painter, 
                             rect.left() + x * self.squareWidth(),
@@ -505,7 +504,45 @@ class Board_base(QFrame):
 
         rect = QRect(140, 15, 25, 25)
         painter.drawRect(rect)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape1))
+
+        # paint piece 2
+        self.curPiece.setShape(self.shape2) 
+                               
+        self.curX = 4
+        self.curY = 17
+        
+        for i in range(4):
+            x = self.curX + self.curPiece.x(i)
+            y = self.curY - self.curPiece.y(i)
+                
+            self.drawSquare(painter, 
+                            rect.left() + x * self.squareWidth(),
+                            boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                            self.curPiece.shape())
+                            
+        rect = QRect(140, 50, 25, 25)
+        painter.drawRect(rect)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape2))
+
+        # paint piece 3
+        self.curPiece.setShape(self.shape3) 
+                               
+        self.curX = 4
+        self.curY = 14
+        
+        for i in range(4):
+            x = self.curX + self.curPiece.x(i)
+            y = self.curY - self.curPiece.y(i)
+                
+            self.drawSquare(painter, 
+                            rect.left() + x * self.squareWidth(),
+                            boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                            self.curPiece.shape())
+                                    
+        rect = QRect(140, 85, 25, 25)
+        painter.drawRect(rect)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape3))                
                                                    
     def clearBoard(self):
         """clears shapes from the board"""
@@ -564,9 +601,11 @@ class Board_base(QFrame):
                          self.squareHeight() - 10)
                                                                 
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
-    @pyqtSlot(int)
-    def on_nextShape(self, shape):
-        self.next_shape = shape
+    @pyqtSlot(int, int, int)
+    def on_nextShape(self, shape1, shape2, shape3):
+        self.shape1 = shape1
+        self.shape2 = shape2
+        self.shape3 = shape3                
         self.update()
 
   
@@ -583,7 +622,7 @@ class Board(QFrame):
 
     # Signal emitted when full lines are cleared, carrying the number of lines cleared
     # in this round
-    nextShape = pyqtSignal(int) 
+    nextShape = pyqtSignal(int, int, int) 
          
     BoardWidth = 10
     BoardHeight = 22
@@ -621,8 +660,6 @@ class Board(QFrame):
 
         for piece in self.pieceQueue:
             piece.setRandomShape()
-
-        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
                
 #        self.nextPiece = Shape()
 #        self.nextPiece.setRandomShape()
@@ -891,8 +928,6 @@ class Board(QFrame):
         # pop the piece off the piece queue
         self.curPiece = self.pieceQueue.pop(0)
 
-        self.nextShape.emit(self.pieceQueue[0].shape())
-
         print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
                 
         # create and push a new piece to the piece queue
@@ -901,7 +936,11 @@ class Board(QFrame):
         self.pieceQueue.append(piece)
 
         print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
-        
+
+        self.nextShape.emit(self.pieceQueue[0].shape(),
+                            self.pieceQueue[1].shape(),
+                            self.pieceQueue[2].shape())
+                                    
         # Tetromino start locations
         # * The I and O spawn in the middle columns
         # * The rest spawn in the left-middle columns
