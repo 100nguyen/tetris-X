@@ -22,8 +22,9 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import (Qt, QDate, QTime, QDateTime, QTimer, QBasicTimer, pyqtSignal, QObject,    
     pyqtSlot, QRect)
 from PyQt6.QtGui import QPainter, QColor, QFont, QIcon, QPen
-from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, QDialog, QMessageBox, QPushButton, QDialogButtonBox,
-    QTableWidget, QTableWidgetItem,
+from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, 
+    QDialog, QInputDialog, QMessageBox, QPushButton, QDialogButtonBox,
+    QTableWidget, QTableWidgetItem, QLineEdit,
     QWidget, QMainWindow,  QApplication)
 
 
@@ -273,6 +274,15 @@ class Tetris(QMainWindow):
         sublist.sort(key = lambda x: x[1], reverse=True) 
         return sublist       
 
+    def prompt_player_for_name(self, msg):
+        text, ok = QInputDialog.getText(self, 
+                                        'Congrats!',
+                                        msg + '\nEnter your initials:', 
+                                        QLineEdit.EchoMode.Normal, 
+                                        'Bach') 
+        print('Name entered: ', text)   
+        return text;
+        
     def test(self, level):
         return 300;
                             
@@ -282,20 +292,43 @@ class Tetris(QMainWindow):
 
         if n > 4:
             # "Game Over" code
-
-            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            record = ['Bach', self.main_score, now]
                 
             if (len(self.records) < 10):
-                self.records.append(record)    
-            elif (self.records[9][1] < self.main_score):
+                msg = 'Excellent!'
+             
+                if (self.records[0][1] < self.main_score):
+                    msg = msg + ' New High Score'
+            
+                name = prompt_player_for_name(msg)
+                                            
+                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                record = [name, self.main_score, now]            
+                        
+                self.records.append(record) 
+
+                self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
+                self.model = TableModel(self.records)
+                self.table.setModel(self.model)
+                                   
+            elif (self.records[-1][1] < self.main_score):
+                msg = 'Excellent!'
+             
+                if (self.records[0][1] < self.main_score):
+                    msg = msg + ' New High Score'
+            
+                name = prompt_player_for_name(msg)
+                                            
+                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                record = [name, self.main_score, now]            
+                        
+                self.records.append(record)             
                 self.records.pop()
                 self.records.append(record)    
 
-            self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
-            self.model = TableModel(self.records)
-            self.table.setModel(self.model)
-                    
+                self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
+                self.model = TableModel(self.records)
+                self.table.setModel(self.model)
+                                
             dlg = CustomDialog(self.model) 
 
             if dlg.exec():
@@ -420,27 +453,27 @@ class Board_base(QFrame):
 
             self.curX = Board.BoardWidth // 2 + 1
  
-            if (k == 1):
+            if (k == 1): # I
                 self.curX = 2
-                self.curY = 13
-            elif (k == 2):
-                self.curX = 7
-                self.curY = 13                                                               
-            elif (k == 3):
+                self.curY = 12
+            elif (k == 2): # J
+                self.curX = 5
+                self.curY = 10                                                               
+            elif (k == 3): # L
                 self.curX = 2
-                self.curY = 9
-            elif (k == 4):
-                self.curX = 7
-                self.curY = 9                
-            elif (k == 5):
-                self.curX = 4
-                self.curY = 6
-            elif (k == 6):
+                self.curY = 8
+            elif (k == 4): # O
+                self.curX = 5
+                self.curY = 6                
+            elif (k == 5): # S
                 self.curX = 2
-                self.curY = 2
-            else: # (k == 7)
-                self.curX = 7
-                self.curY = 2                                                         
+                self.curY = 4
+            elif (k == 6): # T
+                self.curX = 5
+                self.curY = 3
+            else: # Z
+                self.curX = 2
+                self.curY = 1                                                         
             
 #            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
@@ -470,9 +503,9 @@ class Board_base(QFrame):
                             boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                             self.curPiece.shape())
 
-#        rect = QRect(10, 15, 25, 25)
-#        painter.drawRect(rect)
-#        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
+        rect = QRect(140, 15, 25, 25)
+        painter.drawRect(rect)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.next_shape))
                                                    
     def clearBoard(self):
         """clears shapes from the board"""
@@ -584,8 +617,15 @@ class Board(QFrame):
         self.timePlayed = 0
         self.tDelta = 0
         
-        self.nextPiece = Shape()
-        self.nextPiece.setRandomShape()
+        self.pieceQueue = [ Shape() for i in range(Board.PieceQueueDepth) ]
+
+        for piece in self.pieceQueue:
+            piece.setRandomShape()
+
+        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
+               
+#        self.nextPiece = Shape()
+#        self.nextPiece.setRandomShape()
                                           
         self.curX = 0
         self.curY = 0
@@ -841,12 +881,27 @@ class Board(QFrame):
 
     def newPiece(self):
         """creates a new shape"""
+
+#        self.curPiece = self.nextPiece        
+#        self.nextPiece = Shape()
+#        self.nextPiece.setRandomShape()              
+#        self.nextShape.emit(self.nextPiece.shape())
+        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
         
-        self.curPiece = self.nextPiece
+        # pop the piece off the piece queue
+        self.curPiece = self.pieceQueue.pop(0)
+
+        self.nextShape.emit(self.pieceQueue[0].shape())
+
+        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
+                
+        # create and push a new piece to the piece queue
+        piece = Shape()
+        piece.setRandomShape()  
+        self.pieceQueue.append(piece)
+
+        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
         
-        self.nextPiece = Shape()
-        self.nextPiece.setRandomShape()              
-        self.nextShape.emit(self.nextPiece.shape())
         # Tetromino start locations
         # * The I and O spawn in the middle columns
         # * The rest spawn in the left-middle columns
