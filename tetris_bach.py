@@ -448,48 +448,49 @@ class Board_base(QFrame):
 
         self.curPiece = Shape()
         
-        for k in range(1, 8):
-            self.curPiece.setShape(k)
+#        for k in range(1, 8):
+#            self.curPiece.setShape(k)
 
-            self.curX = Board.BoardWidth // 2 + 1
+#            self.curX = Board.BoardWidth // 2 + 1
  
-            if (k == 1): # I
-                self.curX = 2
-                self.curY = 12
-            elif (k == 2): # J
-                self.curX = 5
-                self.curY = 10                                                               
-            elif (k == 3): # L
-                self.curX = 2
-                self.curY = 8
-            elif (k == 4): # O
-                self.curX = 5
-                self.curY = 6                
-            elif (k == 5): # S
-                self.curX = 2
-                self.curY = 4
-            elif (k == 6): # T
-                self.curX = 5
-                self.curY = 3
-            else: # Z
-                self.curX = 2
-                self.curY = 1                                                         
+#            if (k == 1): # I
+#                self.curX = 2
+#                self.curY = 12
+#            elif (k == 2): # J
+#                self.curX = 5
+#                self.curY = 10                                                               
+#            elif (k == 3): # L
+#                self.curX = 2
+#                self.curY = 8
+#            elif (k == 4): # O
+#                self.curX = 5
+#                self.curY = 6                
+#            elif (k == 5): # S
+#                self.curX = 2
+#                self.curY = 4
+#            elif (k == 6): # T
+#                self.curX = 5
+#                self.curY = 3
+#            else: # Z
+#                self.curX = 2
+#                self.curY = 1                                                         
             
 #            print( '\t(self.curX, self.curY) is (%s, %s)' % (self.curX, self.curY))
             
-            for i in range(4):
-                x = self.curX + self.curPiece.x(i)
-                y = self.curY - self.curPiece.y(i)
+#            for i in range(4):
+#                x = self.curX + self.curPiece.x(i)
+#                y = self.curY - self.curPiece.y(i)
 #                print( '\t(x, y) is (%s, %s)' % (x, y))
                 
-                self.drawSquare(painter, 
-                                rect.left() + x * self.squareWidth(),
-                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
-                                self.curPiece.shape())
+#                self.drawSquare(painter, 
+#                                rect.left() + x * self.squareWidth(),
+#                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+#                                self.curPiece.shape())
 
         # paint piece 1
         self.curPiece.setShape(self.shape1) 
-                               
+        print('shape1: ', self.shape1)
+                                    
         self.curX = 4
         self.curY = 20
         
@@ -502,15 +503,14 @@ class Board_base(QFrame):
                             boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                             self.curPiece.shape())
 
-        rect = QRect(140, 15, 25, 25)
-        painter.drawRect(rect)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape1))
+
 
         # paint piece 2
         self.curPiece.setShape(self.shape2) 
-                               
+        print('shape2: ', self.shape2)
+                                       
         self.curX = 4
-        self.curY = 17
+        self.curY = 16
         
         for i in range(4):
             x = self.curX + self.curPiece.x(i)
@@ -521,15 +521,14 @@ class Board_base(QFrame):
                             boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                             self.curPiece.shape())
                             
-        rect = QRect(140, 50, 25, 25)
-        painter.drawRect(rect)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape2))
+
 
         # paint piece 3
         self.curPiece.setShape(self.shape3) 
-                               
+        print('shape3: ', self.shape3)
+                                       
         self.curX = 4
-        self.curY = 14
+        self.curY = 12
         
         for i in range(4):
             x = self.curX + self.curPiece.x(i)
@@ -539,10 +538,18 @@ class Board_base(QFrame):
                             rect.left() + x * self.squareWidth(),
                             boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                             self.curPiece.shape())
+
+#        rect = QRect(140, 15, 25, 25)
+#        painter.drawRect(rect)
+#        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape1))
+
+#        rect = QRect(140, 50, 25, 25)
+#        painter.drawRect(rect)
+#        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape2))
                                     
-        rect = QRect(140, 85, 25, 25)
-        painter.drawRect(rect)
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape3))                
+#        rect = QRect(140, 85, 25, 25)
+#        painter.drawRect(rect)
+#        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape3))                
                                                    
     def clearBoard(self):
         """clears shapes from the board"""
