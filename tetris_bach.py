@@ -274,15 +274,6 @@ class Tetris(QMainWindow):
         sublist.sort(key = lambda x: x[1], reverse=True) 
         return sublist       
 
-    def prompt_player_for_name(self, msg):
-        text, ok = QInputDialog.getText(self, 
-                                        'Congrats!',
-                                        msg + '\nEnter your initials:', 
-                                        QLineEdit.EchoMode.Normal, 
-                                        'Bach') 
-        print('Name entered: ', text)   
-        return text;
-        
     def test(self, level):
         return 300;
                             
@@ -298,9 +289,13 @@ class Tetris(QMainWindow):
              
                 if (self.records[0][1] < self.main_score):
                     msg = msg + ' New High Score'
-            
-                name = prompt_player_for_name(msg)
-                                            
+
+                name, ok = QInputDialog.getText(self, 
+                                                'Congrats!',
+                                                msg + '\nEnter your initials:', 
+                                                QLineEdit.EchoMode.Normal, 
+                                                'Bach') 
+                                                                                                
                 now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 record = [name, self.main_score, now]            
                         
@@ -311,12 +306,13 @@ class Tetris(QMainWindow):
                 self.table.setModel(self.model)
                                    
             elif (self.records[-1][1] < self.main_score):
-                msg = 'Excellent!'
-             
-                if (self.records[0][1] < self.main_score):
-                    msg = msg + ' New High Score'
-            
-                name = prompt_player_for_name(msg)
+                msg = 'You had fun!'
+                         
+                name, ok = QInputDialog.getText(self, 
+                                                'Congrats!',
+                                                msg + '\nEnter your initials:', 
+                                                QLineEdit.EchoMode.Normal, 
+                                                'Bach') 
                                             
                 now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 record = [name, self.main_score, now]            
@@ -354,12 +350,11 @@ class Tetris(QMainWindow):
             self.main_level = 1 + (self.main_lines // 10)
             
             # compute speed in msecs (See https://tetris.fandom.com/wiki/Tetris_Worlds)
-            x = self.main_level + 1 - 1
+            x = self.main_level - 1
             time = math.pow(0.8 - (0.007 * x), x)
             print(' * Level: ', self.main_level, ', Time spent per row (seconds): ', time)
-            speed = int(1000 * time)
-            print('Speed in msecs: ', speed)
             
+            self.tboard.updateSpeed(int(1000 * time))          
             
             self.levelValue.setNum(self.main_level)        
 
@@ -633,12 +628,12 @@ class Board(QFrame):
          
     BoardWidth = 10
     BoardHeight = 22
-    Speed = 300 # Each 300 ms a new game cycle will start.
+    Speed = 1000#300 # Each 300 ms a new game cycle will start.
     PieceQueueDepth = 3
 
     isPaused = False
     isStarted = False
-                
+                    
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -719,7 +714,12 @@ class Board(QFrame):
         self.isWaitingAfterLine = False
         self.numLinesRemoved = 0
         self.clearBoard()
-
+    
+        # three-second countdown
+        for i in range(3,0,-1):
+            print(f"{i}", end="\r", flush=True)
+            time.sleep(1)
+            
         self.newPiece()
         
         self.timePlayed = 0
@@ -1049,8 +1049,15 @@ class Board(QFrame):
 
     def removeFullLine(self, rowIndex):
         start = rowIndex * Board.BoardWidth
-        self.board[start:(start + Board.BoardWidth)] = self.getLine(rowIndex + 1)           
-                        
+        self.board[start:(start + Board.BoardWidth)] = self.getLine(rowIndex + 1) 
+        
+    def updateSpeed(self, speed):
+        print('CURRENT speed: ', Board.Speed, 'NEW speed: ', speed)
+        if Board.Speed != speed:
+            Board.Speed = speed                 
+            self.timer = QBasicTimer() 
+            self.timer.start(Board.Speed, self)
+                                       
 class Tetrominoe:
 
     NoShape = 0
