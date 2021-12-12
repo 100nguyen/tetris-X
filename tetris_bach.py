@@ -484,7 +484,6 @@ class Board_base(QFrame):
 
         # paint piece 1
         self.curPiece.setShape(self.shape1) 
-        print('shape1: ', self.shape1)
                                     
         self.curX = 4
         self.curY = 20
@@ -502,7 +501,6 @@ class Board_base(QFrame):
 
         # paint piece 2
         self.curPiece.setShape(self.shape2) 
-        print('shape2: ', self.shape2)
                                        
         self.curX = 4
         self.curY = 16
@@ -520,7 +518,6 @@ class Board_base(QFrame):
 
         # paint piece 3
         self.curPiece.setShape(self.shape3) 
-        print('shape3: ', self.shape3)
                                        
         self.curX = 4
         self.curY = 12
@@ -628,7 +625,7 @@ class Board(QFrame):
          
     BoardWidth = 10
     BoardHeight = 22
-    Speed = 1000#300 # Each 300 ms a new game cycle will start.
+    Speed = 1000 # Each 1000 ms a new game cycle will start.
     PieceQueueDepth = 3
 
     isPaused = False
@@ -679,6 +676,7 @@ class Board(QFrame):
         self.isPaused = False
         self.clearBoard()
 
+        Board.Speed = 1000
 
     def shapeAt(self, x, y):
         """determines shape at the board position"""
@@ -709,22 +707,22 @@ class Board(QFrame):
         
         if self.isPaused:
             return
-
+    
         self.isStarted = True
         self.isWaitingAfterLine = False
         self.numLinesRemoved = 0
         self.clearBoard()
-    
-        # three-second countdown
-        for i in range(3,0,-1):
-            print(f"{i}", end="\r", flush=True)
-            time.sleep(1)
-            
+                
         self.newPiece()
         
         self.timePlayed = 0
         self.tDelta = 0
-             
+
+        # three-second countdown
+        for i in range(3,0,-1):
+            print(f'Game will start in {i} seconds', end="\r", flush=True)
+            time.sleep(1)
+                         
         self.timer.start(Board.Speed, self)
 
 
@@ -739,7 +737,12 @@ class Board(QFrame):
         if self.isPaused:
             self.timer.stop()
                                         
-        else:       
+        else: 
+            # three-second countdown
+#            for i in range(3,0,-1):
+#                print(f'Game will resume in {i} seconds', end="\r", flush=True)
+#                time.sleep(1)
+                              
             self.timer.start(Board.Speed, self)
             
         self.update()
@@ -935,14 +938,14 @@ class Board(QFrame):
         # pop the piece off the piece queue
         self.curPiece = self.pieceQueue.pop(0)
 
-        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
+#        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
                 
         # create and push a new piece to the piece queue
         piece = Shape()
         piece.setRandomShape()  
         self.pieceQueue.append(piece)
 
-        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
+#        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
 
         self.nextShape.emit(self.pieceQueue[0].shape(),
                             self.pieceQueue[1].shape(),
