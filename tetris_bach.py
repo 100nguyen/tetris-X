@@ -24,10 +24,129 @@ from PyQt6.QtCore import (Qt, QDate, QTime, QDateTime, QTimer, QBasicTimer, pyqt
 from PyQt6.QtGui import QPainter, QColor, QFont, QIcon, QPen
 from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout, 
     QDialog, QInputDialog, QMessageBox, QPushButton, QDialogButtonBox,
-    QTableWidget, QTableWidgetItem, QLineEdit,
+    QTableWidget, QTableWidgetItem, QLineEdit, QProgressBar, QSplashScreen, 
     QWidget, QMainWindow,  QApplication)
 
+#https://learndataanalysis.org/source-code-create-a-modern-style-flash-screen-pyqt5-tutorial/
+class SplashScreenOriginal(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Spash Screen Example')
+        self.setFixedSize(1100, 500)
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        self.counter = 0
+        self.n = 3 # total instance
+
+        self.initUI()
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.loading)
+        self.timer.start(1000)
+        
+    def initUI(self):
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.frame = QFrame()
+        layout.addWidget(self.frame)
+
+        self.labelTitle = QLabel(self.frame)
+        self.labelTitle.setObjectName('LabelTitle')
+
+        # center labels
+        self.labelTitle.resize(self.width() - 10, 150)
+        self.labelTitle.move(0, 40) # x, y
+        self.labelTitle.setText('Splash Screen')
+        self.labelTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.labelDescription = QLabel(self.frame)
+        self.labelDescription.resize(self.width() - 10, 50)
+        self.labelDescription.move(0, self.labelTitle.height())
+        self.labelDescription.setObjectName('LabelDesc')
+        self.labelDescription.setText('<strong>Working on Task #1</strong>')
+        self.labelDescription.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.progressBar = QProgressBar(self.frame)
+        self.progressBar.resize(self.width() - 200 - 10, 50)
+        self.progressBar.move(100, self.labelDescription.y() + 130)
+        self.progressBar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.progressBar.setFormat('%p%')
+        self.progressBar.setTextVisible(True)
+        self.progressBar.setRange(0, self.n)
+        self.progressBar.setValue(20)
+
+        self.labelLoading = QLabel(self.frame)
+        self.labelLoading.resize(self.width() - 10, 50)
+        self.labelLoading.move(0, self.progressBar.y() + 70)
+        self.labelLoading.setObjectName('LabelLoading')
+        self.labelLoading.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.labelLoading.setText('loading...')
+
+    def loading(self):
+        self.progressBar.setValue(self.counter)
+
+        if self.counter == int(self.n * 0.3):
+            self.labelDescription.setText('<strong>Working on Task #2</strong>')
+        elif self.counter == int(self.n * 0.6):
+            self.labelDescription.setText('<strong>Working on Task #3</strong>')
+        elif self.counter >= self.n:
+            self.timer.stop()
+            self.close()
+
+#            time.sleep(1)
+
+#            self.myApp = MyApp()
+#            self.myApp.show()
+
+        self.counter += 1
+        
+class MyApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.window_width, self.window_height = 1200, 800
+        self.setMinimumSize(self.window_width, self.window_height)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout) 
+# END of Original
+
+
+class SplashScreen(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Spash Screen Example')
+        self.setFixedSize(1100, 500)
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+ #       self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+
+
+        self.initUI()
+
+        # three-second countdown
+        for i in range(3,0,-1):
+            print(f'{i}', end="\r", flush=True)
+            time.sleep(1)
+
+
+        
+
+
+    def initUI(self):
+        self.l1=QLabel("Let's Close this Window")
+
+    def loading(self):
+
+
+#            time.sleep(1)
+
+#            self.myApp = MyApp()
+#            self.myApp.show()
+
+        self.counter += 1
+            
 # The Olympic Medals Color Scheme palette has 6 colors which are 
 # American Gold '#D6AF36'
 # Pantone Yellow '#FEE101'
@@ -719,10 +838,13 @@ class Board(QFrame):
         self.tDelta = 0
 
         # three-second countdown
-        for i in range(3,0,-1):
-            print(f'Game will start in {i} seconds', end="\r", flush=True)
-            time.sleep(1)
-                         
+#        for i in range(3,0,-1):
+#            print(f'Game will start in {i} seconds', end="\r", flush=True)
+#            time.sleep(1)
+#        self.splash = SplashScreen()
+#        self.splash.show() 
+        self.flashSplash()
+                                   
         self.timer.start(Board.Speed, self)
 
 
@@ -742,7 +864,10 @@ class Board(QFrame):
 #            for i in range(3,0,-1):
 #                print(f'Game will resume in {i} seconds', end="\r", flush=True)
 #                time.sleep(1)
-                              
+#            self.splash = SplashScreen()
+#            self.splash.show() 
+            self.flashSplash() 
+                                                     
             self.timer.start(Board.Speed, self)
             
         self.update()
@@ -1060,7 +1185,37 @@ class Board(QFrame):
             Board.Speed = speed                 
             self.timer = QBasicTimer() 
             self.timer.start(Board.Speed, self)
-                                       
+
+
+    def flashSplash(self):
+        # three-second countdown
+        for i in range(3,0,-1):
+#            print(f'{i}', end="\r", flush=True)
+            time.sleep(1)
+                
+#        self.splash = QSplashScreen()
+
+        # By default, SplashScreen will be in the center of the screen.
+        # You can move it to a specific location if you want:
+        # self.splash.move(10,10)
+
+#        self.splash.show()
+
+        # Close SplashScreen after 3 seconds (3000 ms)
+#        QTimer.singleShot(3000, self.splash.close) 
+        self.splash = QLabel("""
+                <font color=red size=128>
+                 <b>Hello PyQt， The window will disappear after 3 seconds！</b>
+                </font>""")
+
+        # SplashScreen - Indicates that the window is a splash screen. This is the default type for .QSplashScreen
+        # FramelessWindowHint - Creates a borderless window. The user cannot move or resize the borderless window through the window system.
+        self.splash.setWindowFlags(Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
+        self.splash.show()
+
+        # Automatically exit after  3 seconds
+        QTimer.singleShot(3000, self.splash.close) 
+                                             
 class Tetrominoe:
 
     NoShape = 0
@@ -1224,7 +1379,8 @@ class Shape:
 def main():
 
     app = QApplication([]) 
-#    app.setStyleSheet('.QLabel { font-size: 24pt;}')       
+#    app.setStyleSheet('.QLabel { font-size: 24pt;}') 
+          
     tetris = Tetris()
     sys.exit(app.exec())
 
