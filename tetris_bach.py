@@ -28,125 +28,88 @@ from PyQt6.QtWidgets import (QFrame, QLabel, QHBoxLayout, QVBoxLayout,
     QWidget, QMainWindow,  QApplication)
 
 #https://learndataanalysis.org/source-code-create-a-modern-style-flash-screen-pyqt5-tutorial/
-class SplashScreenOriginal(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Spash Screen Example')
-        self.setFixedSize(1100, 500)
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-        self.counter = 0
-        self.n = 3 # total instance
-
-        self.initUI()
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.loading)
-        self.timer.start(1000)
-        
-    def initUI(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        self.frame = QFrame()
-        layout.addWidget(self.frame)
-
-        self.labelTitle = QLabel(self.frame)
-        self.labelTitle.setObjectName('LabelTitle')
-
-        # center labels
-        self.labelTitle.resize(self.width() - 10, 150)
-        self.labelTitle.move(0, 40) # x, y
-        self.labelTitle.setText('Splash Screen')
-        self.labelTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.labelDescription = QLabel(self.frame)
-        self.labelDescription.resize(self.width() - 10, 50)
-        self.labelDescription.move(0, self.labelTitle.height())
-        self.labelDescription.setObjectName('LabelDesc')
-        self.labelDescription.setText('<strong>Working on Task #1</strong>')
-        self.labelDescription.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.progressBar = QProgressBar(self.frame)
-        self.progressBar.resize(self.width() - 200 - 10, 50)
-        self.progressBar.move(100, self.labelDescription.y() + 130)
-        self.progressBar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.progressBar.setFormat('%p%')
-        self.progressBar.setTextVisible(True)
-        self.progressBar.setRange(0, self.n)
-        self.progressBar.setValue(20)
-
-        self.labelLoading = QLabel(self.frame)
-        self.labelLoading.resize(self.width() - 10, 50)
-        self.labelLoading.move(0, self.progressBar.y() + 70)
-        self.labelLoading.setObjectName('LabelLoading')
-        self.labelLoading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.labelLoading.setText('loading...')
-
-    def loading(self):
-        self.progressBar.setValue(self.counter)
-
-        if self.counter == int(self.n * 0.3):
-            self.labelDescription.setText('<strong>Working on Task #2</strong>')
-        elif self.counter == int(self.n * 0.6):
-            self.labelDescription.setText('<strong>Working on Task #3</strong>')
-        elif self.counter >= self.n:
-            self.timer.stop()
-            self.close()
-
-#            time.sleep(1)
-
-#            self.myApp = MyApp()
-#            self.myApp.show()
-
-        self.counter += 1
-        
-class MyApp(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.window_width, self.window_height = 1200, 800
-        self.setMinimumSize(self.window_width, self.window_height)
-
-        layout = QVBoxLayout()
-        self.setLayout(layout) 
-# END of Original
-
-
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Spash Screen Example')
-        self.setFixedSize(1100, 500)
+        self.setWindowTitle('Three-second Countdown')
+        self.setFixedSize(250, 250)
+        self.setStyleSheet('background-color: rgb(80, 80, 80);')         
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
- #       self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+ 
+        self.ptSizes = [200, 150, 100, 50]
+        
+        self.number = 3
+        self.counter = 0
+        
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.loading)
+        self.timer.start(250)
 
         self.initUI()
 
-        # three-second countdown
-        for i in range(3,0,-1):
-            print(f'{i}', end="\r", flush=True)
-            time.sleep(1)
+    def initUI(self):                    
+        hbox = QHBoxLayout()
 
+        self.numberLabel = QLabel(str(self.number))
+        self.numberLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)       
+        hbox.addWidget(self.numberLabel)
 
+        self.setLayout(hbox)
+
+        # x, y, w, h
+        self.setGeometry(1200, 800, 250, 250)
+#        self.resize(180, 180)  
+#        self.center()
+
+#        self.show()
         
-
-
-    def initUI(self):
-        self.l1=QLabel("Let's Close this Window")
+        print('Coundown starts')
 
     def loading(self):
 
-
-#            time.sleep(1)
-
-#            self.myApp = MyApp()
-#            self.myApp.show()
-
+        font = QFont()
+        font.setFamily('Times')
+        font.setBold(True)
+               
+        # 0, 1, 2, 3
+        if self.counter < 4:
+            self.number = 3 
+            print('counter: ', self.counter, ', number: ', self.number)
+            font.setPointSize(self.ptSizes[self.counter % 4])
+            self.numberLabel.setFont(font) 
+            self.numberLabel.setNum(self.number)                                  
+        # 4, 5, 6, 7  
+        elif self.counter < 8:
+            self.number = 2
+            print('counter: ', self.counter, ', number: ', self.number)
+            font.setPointSize(self.ptSizes[self.counter % 4])
+            self.numberLabel.setFont(font) 
+            self.numberLabel.setNum(self.number)              
+        # 8, 9, 10, 11                   
+        elif self.counter < 12:
+            self.number = 1       
+            print('counter: ', self.counter, ', number: ', self.number)
+            font.setPointSize(self.ptSizes[self.counter % 4])
+            self.numberLabel.setFont(font) 
+            self.numberLabel.setNum(self.number)                     
+        # 10    
+        else:
+            self.timer.stop()                        
+            print('Coundown ends')
+            self.close() 
+               
         self.counter += 1
-            
+        
+    def center(self):
+        """centers the window on the screen"""
+
+        qr = self.frameGeometry()
+        cp = self.screen().availableGeometry().center()
+
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())        
+                              
 # The Olympic Medals Color Scheme palette has 6 colors which are 
 # American Gold '#D6AF36'
 # Pantone Yellow '#FEE101'
@@ -350,7 +313,7 @@ class Tetris(QMainWindow):
          
         # start game                
         self.tboard.start()
-#        self.tboard.pause()
+#        self.tboard.pause()else
         
 #        self.resize(180, 380)
         self.resize(180*4 + 90, 380) 
@@ -509,7 +472,7 @@ class Board_base(QFrame):
 
         self.board = [] # origin (0, 0) is the bottom left corner
 
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+#        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: rgb(80, 80, 80);') 
          
         self.setFixedSize(180, 380)         
@@ -533,6 +496,16 @@ class Board_base(QFrame):
 
         painter = QPainter(self)
         painter.setPen(QColor(40, 40, 40))
+
+        # three-second countdown
+        for i in range(3,0,-1):
+            print(f'{i}', end="\r", flush=True)
+#            self.drawText(event, painter, str(i) + '\n')
+            QTimer.singleShot(1000, self.singleShotAction) 
+            
+#        painter.begin(self)
+ 
+#        painter.end()
         
         rect = self.contentsRect()
 
@@ -658,7 +631,7 @@ class Board_base(QFrame):
 #        painter.drawRect(rect)
 #        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape2))
                                     
-#        rect = QRect(140, 85, 25, 25)
+#       rect = QRect(140, 85, 25, 25)
 #        painter.drawRect(rect)
 #        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(self.shape3))                
                                                    
@@ -717,7 +690,16 @@ class Board_base(QFrame):
                          y + 5, 
                          self.squareWidth()  - 10,
                          self.squareHeight() - 10)
-                                                                
+
+
+    def drawText(self, event, qp, text):
+        qp.setPen(QColor(168, 34, 3))
+        qp.setFont(QFont('Decorative', 10))
+        qp.drawText(event.rect(), Qt.AlignmentFlag.AlignCenter, text)
+        
+    def singleShotAction(self):
+        pass
+                                                                           
     # A slot for the "lines_cleared" signal, accepting the number of lines cleared in this round
     @pyqtSlot(int, int, int)
     def on_nextShape(self, shape1, shape2, shape3):
@@ -790,7 +772,8 @@ class Board(QFrame):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet('background-color: rgb(40, 40, 40);') 
         self.setFixedSize(180, 380)         
-        
+        self.splash = None 
+              
         self.isStarted = False
         self.isPaused = False
         self.clearBoard()
@@ -837,15 +820,13 @@ class Board(QFrame):
         self.timePlayed = 0
         self.tDelta = 0
 
-        # three-second countdown
-#        for i in range(3,0,-1):
-#            print(f'Game will start in {i} seconds', end="\r", flush=True)
-#            time.sleep(1)
-#        self.splash = SplashScreen()
-#        self.splash.show() 
-        self.flashSplash()
+        self.splash = SplashScreen()
+        self.splash.show()
+        
+        # star/resume game after 3 seconds
+        QTimer.singleShot(3000, self.startTimer) 
                                    
-        self.timer.start(Board.Speed, self)
+#        self.timer.start(Board.Speed, self)
 
 
     def pause(self):
@@ -860,15 +841,13 @@ class Board(QFrame):
             self.timer.stop()
                                         
         else: 
-            # three-second countdown
-#            for i in range(3,0,-1):
-#                print(f'Game will resume in {i} seconds', end="\r", flush=True)
-#                time.sleep(1)
-#            self.splash = SplashScreen()
-#            self.splash.show() 
-            self.flashSplash() 
-                                                     
-            self.timer.start(Board.Speed, self)
+            self.splash = SplashScreen()
+            self.splash.show()
+            
+            # star/resume game after 3 seconds
+            QTimer.singleShot(3000, self.startTimer)             
+                                                  
+#            self.timer.start(Board.Speed, self)
             
         self.update()
 
@@ -1186,35 +1165,8 @@ class Board(QFrame):
             self.timer = QBasicTimer() 
             self.timer.start(Board.Speed, self)
 
-
-    def flashSplash(self):
-        # three-second countdown
-        for i in range(3,0,-1):
-#            print(f'{i}', end="\r", flush=True)
-            time.sleep(1)
-                
-#        self.splash = QSplashScreen()
-
-        # By default, SplashScreen will be in the center of the screen.
-        # You can move it to a specific location if you want:
-        # self.splash.move(10,10)
-
-#        self.splash.show()
-
-        # Close SplashScreen after 3 seconds (3000 ms)
-#        QTimer.singleShot(3000, self.splash.close) 
-        self.splash = QLabel("""
-                <font color=red size=128>
-                 <b>Hello PyQt， The window will disappear after 3 seconds！</b>
-                </font>""")
-
-        # SplashScreen - Indicates that the window is a splash screen. This is the default type for .QSplashScreen
-        # FramelessWindowHint - Creates a borderless window. The user cannot move or resize the borderless window through the window system.
-        self.splash.setWindowFlags(Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
-        self.splash.show()
-
-        # Automatically exit after  3 seconds
-        QTimer.singleShot(3000, self.splash.close) 
+    def startTimer(self):
+        self.timer.start(Board.Speed, self)
                                              
 class Tetrominoe:
 
