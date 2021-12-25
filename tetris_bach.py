@@ -39,7 +39,7 @@ class SplashScreen(QWidget):
  
         self.ptSizes = [200, 150, 100, 50]
         
-        self.number = 3
+        self.number = 4
         self.counter = 0
         
         self.timer = QTimer()
@@ -64,42 +64,27 @@ class SplashScreen(QWidget):
 
 #        self.show()
         
-        print('Coundown starts')
+#        print('Coundown starts')
 
     def loading(self):
 
         font = QFont()
         font.setFamily('Times')
         font.setBold(True)
-               
-        # 0, 1, 2, 3
-        if self.counter < 4:
-            self.number = 3 
-            print('counter: ', self.counter, ', number: ', self.number)
+ 
+        if (self.counter < 12):
+            if (self.counter % 4) == 0:
+                self.number -=1
+                 
+ #           print('counter: ', self.counter, ', number: ', self.number)
             font.setPointSize(self.ptSizes[self.counter % 4])
             self.numberLabel.setFont(font) 
-            self.numberLabel.setNum(self.number)                                  
-        # 4, 5, 6, 7  
-        elif self.counter < 8:
-            self.number = 2
-            print('counter: ', self.counter, ', number: ', self.number)
-            font.setPointSize(self.ptSizes[self.counter % 4])
-            self.numberLabel.setFont(font) 
-            self.numberLabel.setNum(self.number)              
-        # 8, 9, 10, 11                   
-        elif self.counter < 12:
-            self.number = 1       
-            print('counter: ', self.counter, ', number: ', self.number)
-            font.setPointSize(self.ptSizes[self.counter % 4])
-            self.numberLabel.setFont(font) 
-            self.numberLabel.setNum(self.number)                     
-        # 10    
+            self.numberLabel.setNum(self.number)        
         else:
             self.timer.stop()                        
-            print('Coundown ends')
-            self.close() 
-               
-        self.counter += 1
+            self.close()
+             
+        self.counter += 1                        
         
     def center(self):
         """centers the window on the screen"""
@@ -263,16 +248,6 @@ class Tetris(QMainWindow):
 
 
         # HIGH SCORES
-        
-        tableTitle = QLabel('HIGH SCORES')       
-        tableTitle.setStyleSheet('color: green;'
-                                 'background-color: black;'
-                                 'font: bold 20px;')       
-        tableTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        self.left.addWidget(tableTitle)
-                
-        self.table = QtWidgets.QTableView() 
-        self.table.horizontalHeader().setStretchLastSection(True)        
 
         self.records = []
 
@@ -281,15 +256,19 @@ class Tetris(QMainWindow):
             self.records = json.load(filehandle)
     
         self.model = TableModel(self.records)
-        self.table.setModel(self.model)
-                               
-        self.left.addWidget(self.table)
-                                                                                                          
-        self.left.addStretch(1)  
- 
-         # CENTER FRAME - Board                         
-        self.tboard = Board(self)
 
+        self.left.addStretch(1)  
+
+        self.playButton = QPushButton('Play', self)
+        self.playButton.setCheckable(True)
+
+        self.playButton.clicked.connect(self.startGame)
+
+        self.left.addWidget(self.playButton)
+                 
+        # CENTER FRAME - Board                                  
+        self.tboard = Board(self)
+            
          # RIGHT FRAME - Queue                 
         self.right = Board_base(self)
         
@@ -310,19 +289,32 @@ class Tetris(QMainWindow):
         self.tboard.msg2Statusbar[str].connect(self.statusbar.showMessage)
         self.tboard.lines_cleared.connect(self.on_lines_cleared)
         self.tboard.nextShape.connect(self.right.on_nextShape)
-         
-        # start game                
-        self.tboard.start()
-#        self.tboard.pause()else
-        
+                     
 #        self.resize(180, 380)
         self.resize(180*4 + 90, 380) 
  
         self.center()
         self.setWindowTitle('Tetris')
+
+        dlg = CustomDialog(self.model) 
+
+        if dlg.exec():                        
+            self.tboard.start()
+
+        else:
+            print('She said no')  
+                
         self.show()
 
+    def startGame(self, pressed):
 
+        source = self.sender()
+
+        if pressed:
+            self.playButton.setText('Resume')
+        else:
+            self.playButton.setText('Play')
+      
     def center(self):
         """centers the window on the screen"""
 
@@ -349,7 +341,7 @@ class Tetris(QMainWindow):
             event.ignore()
             self.tboard.pause()
 
-    def sort_scores_from_high_to_low(sublist):
+    def sort_scores_from_high_to_low(self, sublist):
         # reverse = None (Sorts in Ascending order) 
         # key is set to sort using second element of sublist
         # sublist lambda has been used 
@@ -405,12 +397,10 @@ class Tetris(QMainWindow):
 
                 self.records = sorted(self.records, key=lambda x: x[1], reverse=True)
                 self.model = TableModel(self.records)
-                self.table.setModel(self.model)
                                 
             dlg = CustomDialog(self.model) 
 
             if dlg.exec():
-                print('SCORE: ', self.main_score)
                 self.main_lines = self.main_score = 0  
 
                 self.main_level = 1
@@ -776,8 +766,10 @@ class Board(QFrame):
               
         self.isStarted = False
         self.isPaused = False
+      
         self.clearBoard()
-
+        self.pause()
+        
         Board.Speed = 1000
 
     def shapeAt(self, x, y):
@@ -826,9 +818,6 @@ class Board(QFrame):
         # star/resume game after 3 seconds
         QTimer.singleShot(3000, self.startTimer) 
                                    
-#        self.timer.start(Board.Speed, self)
-
-
     def pause(self):
         """pauses game"""
         
@@ -846,9 +835,7 @@ class Board(QFrame):
             
             # star/resume game after 3 seconds
             QTimer.singleShot(3000, self.startTimer)             
-                                                  
-#            self.timer.start(Board.Speed, self)
-            
+                                                              
         self.update()
 
 
@@ -1037,7 +1024,7 @@ class Board(QFrame):
 #        self.nextPiece = Shape()
 #        self.nextPiece.setRandomShape()              
 #        self.nextShape.emit(self.nextPiece.shape())
-        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
+#        print(' '.join(str(piece.shape()) for piece in self.pieceQueue))
         
         # pop the piece off the piece queue
         self.curPiece = self.pieceQueue.pop(0)
@@ -1228,7 +1215,7 @@ class Shape:
 
         Shape.numPieces += 1
         self.id = self.numPieces
-        print('*** numPieces: %s, ID: %s  ***' % (Shape.numPieces, self.id))
+#        print('*** numPieces: %s, ID: %s  ***' % (Shape.numPieces, self.id))
         self.setShape(random.randint(1, 7))
 
 
